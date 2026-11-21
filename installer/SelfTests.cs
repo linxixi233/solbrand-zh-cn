@@ -1,0 +1,263 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace SolbrandZh {
+    static class SelfTests {
+        static int passed;
+        static void Assert(bool value, string message) { if (!value) throw new Exception(message); }
+        static byte[] Data(string text) { return Encoding.UTF8.GetBytes(text); }
+        static string Md5(byte[] data) { using (var h = MD5.Create()) return PatchEngine.Hex(h.ComputeHash(data)); }
+        static void Reject(Action action, string message) {
+            bool failed = false;
+            try { action(); } catch (IOException) { failed = true; } catch (InvalidDataException) { failed = true; }
+            Assert(failed, message);
+        }
+        static byte[] CreatePack(Dictionary<string, byte[]> files, uint version, long dataBase) {
+            using (var stream = new MemoryStream()) {
+                var header = new byte[dataBase];
+                using (var w = new BinaryWriter(stream, Encoding.UTF8, true)) {
+                    stream.Write(header, 0, header.Length);
+                    stream.Position = 0; w.Write(0x43504447U); w.Write(version); w.Write(4U); w.Write(7U); w.Write(2U); w.Write(2U); w.Write((ulong)dataBase);
+                    stream.Position = dataBase;
+                    var pack = new Pack { Base = dataBase };
+                    foreach (var file in files) {
+                        while (stream.Position % 32 != 0) stream.WriteByte(0);
+                        using (var h = MD5.Create()) pack.Entries.Add(new PackEntry { Name = file.Key, Offset = stream.Position,
+                            Size = file.Value.Length, Hash = h.ComputeHash(file.Value), Flags = 0 });
+                        stream.Write(file.Value, 0, file.Value.Length);
+                    }
+                    pack.WriteIndex(stream);
+                }
+                return stream.ToArray();
+            }
+        }
+        static PatchEngine Fixture(string dir, string version = "0.2.0", bool writeOriginal = true) {
+            Directory.CreateDirectory(dir);
+            var original = CreatePack(new Dictionary<string, byte[]> {
+                {"project.binary", Data("original settings")}, {PatchEngine.Story, Data("original story")},
+                {"Data/中文路径/unchanged.bin", Enumerable.Repeat((byte)137, 4 * 1024 * 1024).ToArray()}
+            }, 4, 112);
+            var patch = CreatePack(new Dictionary<string, byte[]> {
+                {"project.binary", Data("localized settings")}, {PatchEngine.Story, Data("中文剧情")},
+                {"ZhPatch/zh_CN.json", Data("{\"Hello\":\"你好\"}")},
+                {"ZhPatch/ZhPatch.gd", Data("extends Node # version " + version)}
+            }, 3, 128);
+            if (writeOriginal) {
+                File.WriteAllBytes(Path.Combine(dir, "Solbrand.pck"), original);
+                File.WriteAllText(Path.Combine(dir, "Solbrand.exe"), "TEST PLACEHOLDER: this file cannot launch a game");
+                File.WriteAllText(Path.Combine(dir, "save-sentinel.dat"), "untouched save");
+            }
+            var engine = new PatchEngine(new PatchManifest { version = version, steamBuild = "fixture",
+                sourcePackSize = original.Length, sourceProjectMd5 = Md5(Data("original settings")),
+                sourceStoryMd5 = Md5(Data("original story")) }, patch);
+            // Only workspace fixtures bypass detection of an unrelated running real game.
+            engine.CheckGameClosed = delegate { };
+            return engine;
+        }
+        static void Test(string title, Action test) { test(); passed++; Console.WriteLine("PASS " + title); }
+        static string Child(string root, string name) { return Path.Combine(root, name); }
+        static IEnumerable<Control> Descendants(Control control) {
+            foreach(Control child in control.Controls){ yield return child; foreach(var nested in Descendants(child))yield return nested; }
+        }
+        static void RenderPreview(MainForm form, string path) {
+            // Render a detached control tree offscreen; never show or drive a live window.
+            using(var content=form.Controls[0]){
+                content.Font=form.Font;content.BackColor=form.BackColor;content.ForeColor=form.ForeColor;
+                form.Controls.Remove(content);content.Dock=DockStyle.None;content.Size=form.ClientSize;content.Visible=true;
+                content.CreateControl();content.PerformLayout();
+                foreach(var item in Descendants(content)){item.CreateControl();item.PerformLayout();}
+                using(var image=new Bitmap(content.Width,content.Height)){
+                    content.DrawToBitmap(image,new Rectangle(0,0,image.Width,image.Height));image.Save(path);
+                }
+            }
+        }
+        [STAThread]
+        public static int Main(string[] args) {
+            try {
+                // All test writes stay beneath this workspace-owned, uniquely-created directory.
+                var workspace = Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".."));
+                var root = Path.GetFullPath(Path.Combine(workspace, "analysis", "installer-tests", Guid.NewGuid().ToString("N")));
+                Assert(root.StartsWith(workspace + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase), "Test path escaped workspace.");
+                Directory.CreateDirectory(root);
+                Test("assistant states, game-running lock, latest-version status and learning-use notice", delegate {
+                    Application.EnableVisualStyles();
+                    var engine = PatchEngine.Embedded();
+                    var game = Environment.GetEnvironmentVariable("SOLBRAND_GAME_DIR") ?? "";
+                    using(var form = new MainForm(engine, game)){
+                        var original = new StatusInfo { Kind=GameStatus.Original, Title="当前是原版", Detail="可以安装汉化。" };
+                        form.ApplyInspection(original,false);
+                        Assert(Descendants(form).OfType<Button>().Any(b=>b.Text=="一键安装汉化"&&b.Enabled),"Original install action missing.");
+                        form.ApplyInspection(original,true);
+                        Assert(!Descendants(form).OfType<Button>().Any(b=>b.Text=="一键安装汉化"&&b.Enabled),"Running game did not disable install.");
+                        var latest = new StatusInfo { Kind=GameStatus.Patched, Title="已汉化", Detail="当前版本已是最新版本。" };
+                        form.ApplyInspection(latest,false);
+                        Assert(Descendants(form).OfType<Button>().Any(b=>b.Text=="已安装最新汉化"&&!b.Enabled),"Latest version allows duplicate installation.");
+                        Assert(Descendants(form).OfType<Button>().Any(b=>b.Text=="在 Steam 中启动游戏"&&b.Enabled),"Completed installation has no launch action.");
+                        form.ApplyInspection(engine.Inspect(game),false);
+                        Assert(Descendants(form).OfType<Label>().Any(l=>l.Text.Contains("非商业性，仅供学习用途")),"Learning-use notice missing.");
+                        RenderPreview(form,Child(workspace,@"analysis\installer-v1.3-preview.png"));
+                    }
+                    var previews = new[] {
+                        new StatusInfo {Kind=GameStatus.Original,Title="当前是原版",Detail="点击“一键安装汉化”开始。工具会先备份原版游戏文件，方便随时回退。"},
+                        new StatusInfo {Kind=GameStatus.UpdateAvailable,Title="发现旧版汉化 · 0.2.0",Detail="点击“更新至 0.3.0”安装新补丁。原版备份和汉化存档会保留，无需先回退。"},
+                        new StatusInfo {Kind=GameStatus.Patched,Title="已汉化 · 0.3.0",Detail="从 Steam 启动即可。汉化版使用独立存档；回退后可继续原版进度。"},
+                        new StatusInfo {Kind=GameStatus.Missing,Title="未找到游戏文件",Detail="请选择包含 Solbrand.exe 和 Solbrand.pck 的游戏安装文件夹。"}
+                    };
+                    var names = new[] { "original", "update", "running", "missing" };
+                    for(int i=0;i<previews.Length;i++)using(var form=new MainForm(engine, i==3 ? "" : game)){
+                        form.ApplyInspection(previews[i],i==2);
+                        RenderPreview(form,Child(workspace,"analysis\\installer-v1.3-"+names[i]+".png"));
+                    }
+                });
+                if(args.Contains("--render-only"))return 0;
+                Test("install, resource checks, idempotence, byte-identical rollback, saves untouched", delegate {
+                    var dir = Child(root, "正常路径 中文"); var engine = Fixture(dir);
+                    var target = Child(dir, "Solbrand.pck"); var original = PatchEngine.HashFile(target);
+                    Assert(engine.Inspect(dir).Kind == GameStatus.Original, "Original detection failed.");
+                    engine.Install(dir);
+                    Assert(engine.Inspect(dir).Kind == GameStatus.Patched, "Patched detection failed.");
+                    Assert(PatchEngine.HashFile(PatchEngine.BackupFile(dir)) == original, "Backup differs from source.");
+                    using (var s = File.OpenRead(target)) {
+                        var p = Pack.Read(s);
+                        Assert(Encoding.UTF8.GetString(Pack.Bytes(s, p.Find(PatchEngine.Story))) == "中文剧情", "Story not replaced.");
+                        Assert(Pack.Bytes(s, p.Find("Data/中文路径/unchanged.bin")).All(b => b == 137), "Unmodified resource changed.");
+                    }
+                    var patched = PatchEngine.HashFile(target); engine.Install(dir);
+                    Assert(PatchEngine.HashFile(target) == patched, "Repeated install changed the file.");
+                    engine.Restore(dir);
+                    Assert(PatchEngine.HashFile(target) == original, "Rollback was not byte-identical.");
+                    Assert(!File.Exists(PatchEngine.BackupFile(dir)), "Consumed backup was not cleaned.");
+                    Assert(File.ReadAllText(Child(dir, "save-sentinel.dat")) == "untouched save", "Save sentinel changed.");
+                    Assert(engine.Inspect(dir).Kind == GameStatus.Original, "Rollback detection failed.");
+                    engine.Restore(dir);
+                    engine.Install(dir); engine.Restore(dir);
+                    Assert(PatchEngine.HashFile(target) == original, "Reinstall/rollback cycle failed.");
+                });
+                Test("unsupported source rejected without modifying it", delegate {
+                    var dir = Child(root, "unsupported"); var engine = Fixture(dir);
+                    File.AppendAllText(Child(dir, "Solbrand.pck"), "new version");
+                    var before = PatchEngine.HashFile(Child(dir, "Solbrand.pck"));
+                    Reject(() => engine.Install(dir), "Unsupported install succeeded.");
+                    Assert(PatchEngine.HashFile(Child(dir, "Solbrand.pck")) == before, "Unsupported source changed.");
+                    Assert(!File.Exists(PatchEngine.BackupFile(dir)), "Unexpected backup for unsupported source.");
+                });
+                Test("modified game refused; backup preserved", delegate {
+                    var dir = Child(root, "changed"); var engine = Fixture(dir); engine.Install(dir);
+                    var backup = PatchEngine.HashFile(PatchEngine.BackupFile(dir));
+                    File.AppendAllText(Child(dir, "Solbrand.pck"), "third-party change");
+                    var changed = PatchEngine.HashFile(Child(dir, "Solbrand.pck"));
+                    Reject(() => engine.Restore(dir), "Changed target was overwritten.");
+                    Assert(PatchEngine.HashFile(Child(dir, "Solbrand.pck")) == changed, "Changed target damaged.");
+                    Assert(PatchEngine.HashFile(PatchEngine.BackupFile(dir)) == backup, "Backup lost.");
+                });
+                Test("corrupt backup refused without touching current game", delegate {
+                    var dir = Child(root, "corrupt"); var engine = Fixture(dir); engine.Install(dir);
+                    var before = PatchEngine.HashFile(Child(dir, "Solbrand.pck"));
+                    using (var s = File.Open(PatchEngine.BackupFile(dir), FileMode.Open, FileAccess.Write)) {
+                        s.Position = 200; s.WriteByte(233);
+                    }
+                    Reject(() => engine.Restore(dir), "Corrupt backup was accepted.");
+                    Assert(PatchEngine.HashFile(Child(dir, "Solbrand.pck")) == before, "Current game damaged.");
+                });
+                Test("interrupted final journal can restore", delegate {
+                    var dir = Child(root, "pending"); var engine = Fixture(dir); var before = PatchEngine.HashFile(Child(dir, "Solbrand.pck"));
+                    engine.Install(dir);
+                    File.Move(Child(PatchEngine.BackupDirectory(dir), "state.json"), Child(PatchEngine.BackupDirectory(dir), "pending.json"));
+                    Assert(engine.Inspect(dir).Kind == GameStatus.Patched, "Pending patch not recognized.");
+                    engine.Restore(dir); Assert(PatchEngine.HashFile(Child(dir, "Solbrand.pck")) == before, "Pending restore failed.");
+                });
+                Test("concurrent operation refused", delegate {
+                    var dir = Child(root, "locked"); var engine = Fixture(dir);
+                    Directory.CreateDirectory(PatchEngine.BackupDirectory(dir));
+                    var before = PatchEngine.HashFile(Child(dir, "Solbrand.pck"));
+                    using (var held = new FileStream(Child(PatchEngine.BackupDirectory(dir), "operation.lock"), FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                        Reject(() => engine.Install(dir), "Operation lock ignored.");
+                    Assert(PatchEngine.HashFile(Child(dir, "Solbrand.pck")) == before, "Locked source changed.");
+                });
+                Test("malformed pack and missing folder refused", delegate {
+                    var dir = Child(root, "missing");
+                    var engine = PatchEngine.Embedded();
+                    engine.CheckGameClosed = delegate { };
+                    Assert(engine.Inspect(dir).Kind == GameStatus.Missing, "Missing folder accepted.");
+                    Reject(() => engine.Restore(dir), "Missing folder restore accepted.");
+                    Reject(() => Pack.Read(new MemoryStream(new byte[128])), "Bad signature accepted.");
+                });
+                Test("old patch upgrades in one action, keeps original backup and saves", delegate {
+                    var dir = Child(root, "upgrade"); var old = Fixture(dir);
+                    var original = PatchEngine.HashFile(Child(dir, "Solbrand.pck"));
+                    old.Install(dir);
+                    var newer = Fixture(dir, "0.2.1", false);
+                    Assert(newer.Inspect(dir).Kind == GameStatus.UpdateAvailable, "Old version not recognized.");
+                    int last = 0;
+                    newer.Progress = (value, text) => { Assert(value >= last, "Update progress decreased."); last = value; };
+                    newer.Install(dir);
+                    Assert(newer.Inspect(dir).Kind == GameStatus.Patched, "Upgrade not recognized.");
+                    Assert(PatchEngine.HashFile(PatchEngine.BackupFile(dir)) == original, "Original backup replaced by patched data.");
+                    Assert(File.ReadAllText(Child(dir, "save-sentinel.dat")) == "untouched save", "Update touched save.");
+                    newer.Progress = delegate { };
+                    newer.Restore(dir);
+                    Assert(PatchEngine.HashFile(Child(dir, "Solbrand.pck")) == original, "Updated patch cannot roll back.");
+                });
+                Test("interruption between restore and reinstall leaves intact original", delegate {
+                    var dir = Child(root, "upgrade-interrupted"); var old = Fixture(dir);
+                    var original = PatchEngine.HashFile(Child(dir, "Solbrand.pck")); old.Install(dir);
+                    var newer = Fixture(dir, "0.2.1", false); int checks = 0;
+                    newer.CheckGameClosed = delegate { if (++checks >= 4) throw new IOException("Simulated interruption."); };
+                    Reject(() => newer.Install(dir), "Simulated interruption ignored.");
+                    Assert(PatchEngine.HashFile(Child(dir, "Solbrand.pck")) == original, "Interrupted update damaged original.");
+                    Assert(newer.Inspect(dir).Kind == GameStatus.Original, "Interrupted update cannot resume.");
+                    newer.CheckGameClosed = delegate { }; newer.Install(dir);
+                    Assert(newer.Inspect(dir).Kind == GameStatus.Patched, "Interrupted update failed to resume.");
+                });
+                Test("running-game guard prevents all mutations", delegate {
+                    var dir = Child(root, "game-running"); var engine = Fixture(dir);
+                    var before = PatchEngine.HashFile(Child(dir, "Solbrand.pck"));
+                    engine.CheckGameClosed = delegate { throw new IOException("Game is running."); };
+                    Reject(() => engine.Install(dir), "Running-game install not rejected.");
+                    Reject(() => engine.Restore(dir), "Running-game restore not rejected.");
+                    Assert(PatchEngine.HashFile(Child(dir, "Solbrand.pck")) == before, "Running-game guard changed file.");
+                });
+                if (args.Length > 0 && args[0] == "--real") {
+                    Test("actual game copy: install and exact SHA256 rollback", delegate {
+                        var source = args.Length > 1 ? args[1] : Environment.GetEnvironmentVariable("SOLBRAND_ORIGINAL_PCK");
+                        Assert(!String.IsNullOrWhiteSpace(source) && File.Exists(source), "Usage: SolbrandZh.Tests.exe --real <original Solbrand.pck>");
+                        source = Path.GetFullPath(source);
+                        var dir = Child(root, "real-game-copy"); Directory.CreateDirectory(dir);
+                        var target = Child(dir, "Solbrand.pck");
+                        var before = PatchEngine.HashFile(source);
+                        File.WriteAllText(Child(dir, "Solbrand.exe"), "TEST PLACEHOLDER: game is never launched");
+                        try {
+                            Console.WriteLine("Copying original resource into test workspace...");
+                            File.Copy(source, target);
+                            var engine = PatchEngine.Embedded(); string last = "";
+                            engine.CheckGameClosed = delegate { };
+                            engine.Progress = (percent, text) => { if (text != last) { Console.WriteLine(percent + "% " + text); last = text; } };
+                            Assert(engine.Inspect(dir).Kind == GameStatus.Original, "Real original not recognized.");
+                            engine.Install(dir);
+                            Assert(engine.Inspect(dir).Kind == GameStatus.Patched, "Real patch not recognized.");
+                            Assert(PatchEngine.HashFile(PatchEngine.BackupFile(dir)) == before, "Real backup differs.");
+                            engine.Restore(dir);
+                            Assert(PatchEngine.HashFile(target) == before, "Real rollback differs.");
+                            Assert(PatchEngine.HashFile(source) == before, "Steam original changed!");
+                            Console.WriteLine("Original/backup/restored SHA256: " + before);
+                        } finally {
+                            // Delete only the exact large test files created above, never the source installation.
+                            Assert(target.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase), "Unsafe cleanup.");
+                            if (File.Exists(target)) File.Delete(target);
+                            var backup = PatchEngine.BackupFile(dir);
+                            if (File.Exists(backup)) File.Delete(backup);
+                        }
+                    });
+                }
+                Console.WriteLine("ALL PASSED: " + passed);
+                return 0;
+            } catch (Exception e) { Console.Error.WriteLine(e); return 1; }
+        }
+    }
+}

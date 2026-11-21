@@ -1,0 +1,12 @@
+config_version=5
+
+[application]
+config/name="Solbrand Patch Validation"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="Solbrand Patch Validation"
+
+[debug]
+file_logging/enable_file_logging=false
+
+[rendering]
+renderer/rendering_method="gl_compatibility"

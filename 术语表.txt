@@ -1,0 +1,36 @@
+Solbrand Demo 暂定术语表（v0.2.0）
+
+人物键、事件键和资源标识保留英文；本表用于显示文本与译文。
+
+Spook：灵媒
+Räkan：虾号
+Arkiv：档案
+Komms：通信
+Logg：日志
+Visir：视镜
+Georadar：探地雷达
+resonance board：共鸣板
+Board：符文板
+Stinger：毒刺
+Crowns：克朗
+öre：厄尔
+Tether：系缆
+Veil：帷幕
+Moment：瞬景
+Fragment：遗物
+Cirkus Solöj：索勒伊马戏团
+Feithish Court：费蒂什庭院
+Captain：船长
+Tinker：机匠
+Worder：语师
+Shimmer：微光
+Urd：乌尔德
+Odin：奥丁
+Clanker：叮当人
+Töj Böj：特伊·贝伊
+Little Finger：小指
+Ring Finger：无名指
+Broken Finger：断指
+
+古诺尔斯语词根、诗句与用于解谜的拼写，按上下文保留原文。
+名称和拼接句仍待实机通读校对。

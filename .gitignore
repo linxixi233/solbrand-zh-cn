@@ -1,0 +1,29 @@
+analysis/
+runtime/
+dist/
+**/.godot/
+__pycache__/
+*.exe
+*.dll
+*.pck
+*.zip
+*.pdb
+*.log
+*.user
+*.suo
+Solbrand-ZH.path.txt
+.env
+.env.*
+.vs/
+.vscode/
+.codex/
+.agents/
+.github-upload.local.json
+# Local experimental launchers, not part of the supported build.
+tools/NativeQa.cs
+tools/launch-native-qa.ps1
+# Superseded guides and private source/translation review exports.
+汉化助手-使用方法.txt
+新版-使用方法.txt
+修复版-使用方法.txt
+译文对照.txt

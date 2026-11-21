@@ -1,0 +1,34 @@
+﻿{
+    "installerVersion":  "1.3.0",
+    "patchVersion":  "0.3.0",
+    "sourceBuild":  "26815196",
+    "tests":  11,
+    "localizedScenes":  65,
+    "sceneTextProperties":  313,
+    "proseResources":  349,
+    "sourceUnchangedSha256":  "9330146336485b5e05d68a41099ffa839acac5c5d39b511e81e1900d7de8e68a",
+    "exeSha256":  "d2bb1f003630ac0f86ae16b96b772670902fa12e76efa40eefba84a2aa16c7f9",
+    "godotTests":  [
+                       "lifecycle",
+                       "late font assignment",
+                       "FontVariation",
+                       "BBCode names",
+                       "Label3D",
+                       "TextureButton",
+                       "Arkiv image reading"
+                   ],
+    "interactiveQaCompleted":  false,
+    "interactiveQaStoppedByUser":  true,
+    "notice":  "非商业性，仅供学习用途",
+    "proseProperties":  562,
+    "uiPreviewStates":  [
+                            "installed",
+                            "original",
+                            "update",
+                            "running",
+                            "missing"
+                        ],
+    "uiVerificationMethod":  "离屏渲染与界面状态检查，未控制实机窗口",
+    "githubUploaderLocalTests":  11,
+    "githubCredentialWireProtocol":  "UTF-8 without BOM; Windows PowerShell 5.1 verified"
+}

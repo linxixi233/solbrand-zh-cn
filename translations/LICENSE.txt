@@ -1,0 +1,18 @@
+本项目原创中文译文与原创说明的许可
+
+Copyright (c) 2026 Solbrand Chinese Localization contributors
+
+本项目拥有相应权利的中文译文及原创说明采用
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International
+（CC BY-NC-SA 4.0，署名—非商业性使用—相同方式共享 4.0 国际）许可。
+
+许可说明：https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans
+完整许可：https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+转载请注明项目名称、项目来源和修改情况，并保留许可链接。
+非商业性，仅供学习用途。
+
+本许可仅适用于贡献者拥有相应权利的贡献部分。
+词典键值、索引或上下文中可能涉及的游戏原文，以及游戏角色、商标和
+原始素材，不因收录于本项目而改变其权利归属或获得新的授权。
+原创程序代码另按仓库根目录的 MIT License 发布。
