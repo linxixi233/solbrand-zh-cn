@@ -7,7 +7,7 @@
     "sceneTextProperties":  313,
     "proseResources":  349,
     "sourceUnchangedSha256":  "9330146336485b5e05d68a41099ffa839acac5c5d39b511e81e1900d7de8e68a",
-    "exeSha256":  "d2bb1f003630ac0f86ae16b96b772670902fa12e76efa40eefba84a2aa16c7f9",
+    "exeSha256":  "c1c7f1b7b218c8fb30396dd67b7cba4dacd6c70c75cf557fb59ddb057929216c",
     "godotTests":  [
                        "lifecycle",
                        "late font assignment",
@@ -29,6 +29,6 @@
                             "missing"
                         ],
     "uiVerificationMethod":  "离屏渲染与界面状态检查，未控制实机窗口",
-    "githubUploaderLocalTests":  11,
+    "githubUploaderLocalTests":  16,
     "githubCredentialWireProtocol":  "UTF-8 without BOM; Windows PowerShell 5.1 verified"
 }

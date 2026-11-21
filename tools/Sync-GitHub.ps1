@@ -131,13 +131,77 @@ function Get-GitHubCredential {
     $script:lastCredentialError = 'Git 凭据查询成功，但没有返回可用的凭据'
     return $null
 }
+function ConvertTo-GitHubJson {
+    param($Body)
+    function Clean-JsonValue($Value) {
+        if ($null -eq $Value) { return $null }
+        if ($Value -is [string]) {
+            # Windows PowerShell adds PSPath/PSDrive metadata to Get-Content
+            # strings. Clone the text so JSON contains only its actual value.
+            return [Text.Encoding]::UTF8.GetString([Text.Encoding]::UTF8.GetBytes([string]$Value))
+        }
+        if ($Value -is [bool] -or $Value -is [int] -or $Value -is [long] -or $Value -is [double]) { return $Value }
+        if ($Value -is [Collections.IDictionary]) {
+            $clean = @{}
+            foreach ($key in $Value.Keys) { $clean[[string]$key] = Clean-JsonValue $Value[$key] }
+            return $clean
+        }
+        if ($Value -is [Collections.IEnumerable]) {
+            $items = @(foreach ($item in $Value) { Clean-JsonValue $item })
+            return ,$items
+        }
+        throw ('GitHub 请求中包含不支持的数据类型：' + $Value.GetType().FullName)
+    }
+    $cleanBody = Clean-JsonValue $Body
+    return ConvertTo-Json -InputObject $cleanBody -Depth 8 -Compress
+}
+function Get-GitHubRelease {
+    param([string]$FullName,[string]$Tag)
+    $release = Invoke-GitHub ('/repos/' + $FullName + '/releases/tags/' + $Tag) -NotFoundOK
+    if ($release) { return $release }
+    # Listing includes the owner's drafts; tag lookup may only find published releases.
+    for ($page = 1; $page -le 100; $page++) {
+        $batchResult = Invoke-GitHub ('/repos/' + $FullName + '/releases?per_page=100&page=' + $page)
+        $batch = @($batchResult | Where-Object { $_ -and $_.id })
+        $match = @($batch | Where-Object { $_.tag_name -eq $Tag })
+        if ($match.Count) { return $match[0] }
+        if ($batch.Count -lt 100) { return $null }
+    }
+    throw 'Release 列表过长，无法安全确认现有版本。'
+}
+function Get-GitHubTagCommit {
+    param([string]$FullName,[string]$Tag)
+    $reference = Invoke-GitHub ('/repos/' + $FullName + '/git/ref/tags/' + $Tag) -NotFoundOK
+    if (!$reference) { return $null }
+    $target = $reference.object
+    for ($depth = 0; $depth -lt 8; $depth++) {
+        if ($target.type -eq 'commit') { return [string]$target.sha }
+        if ($target.type -ne 'tag') { throw ('无法解析标签：' + $Tag) }
+        $tagObject = Invoke-GitHub ('/repos/' + $FullName + '/git/tags/' + $target.sha)
+        $target = $tagObject.object
+    }
+    throw ('标签层级过深：' + $Tag)
+}
+function Select-GitHubReleaseTarget {
+    param([string]$FullName,[string]$BaseTag,[string]$Commit,[bool]$Force = $false)
+    for ($revision = 1; $revision -le 1000; $revision++) {
+        $tag = if ($revision -eq 1) { $BaseTag } else { $BaseTag + '-r' + $revision }
+        $release = Get-GitHubRelease -FullName $FullName -Tag $tag
+        $remoteCommit = Get-GitHubTagCommit -FullName $FullName -Tag $tag
+        $localCommit = $null
+        if (@(& git tag --list $tag) -contains $tag) { $localCommit = (& git rev-list -n 1 ('refs/tags/' + $tag)).Trim() }
+        if (($localCommit -and $localCommit -ne $Commit) -or ($remoteCommit -and $remoteCommit -ne $Commit) -or ($Force -and $release)) { continue }
+        return [pscustomobject]@{Tag=$tag;Revision=$revision;Release=$release;RemoteCommit=$remoteCommit;LocalCommit=$localCommit}
+    }
+    throw '未找到可用的 Release 标签。'
+}
 function Invoke-GitHub {
     param([string]$Path,[string]$Method = 'Get',$Body = $null,[switch]$NotFoundOK,[string]$UploadFile = '')
     $address = if ($Path -match '^https://') { [Uri]$Path } else { [Uri]('https://api.github.com' + $Path) }
     if ($address.Host -notin @('api.github.com','uploads.github.com')) { throw '拒绝向非 GitHub API 地址发送凭据。' }
     $parameters = @{ Uri=$address; Method=$Method; Headers=$script:githubHeaders; TimeoutSec=90; ErrorAction='Stop' }
     if ($UploadFile) { $parameters.InFile=$UploadFile; $parameters.ContentType='application/octet-stream' }
-    elseif ($null -ne $Body) { $parameters.Body=[Text.Encoding]::UTF8.GetBytes(($Body | ConvertTo-Json -Depth 12)); $parameters.ContentType='application/json; charset=utf-8' }
+    elseif ($null -ne $Body) { $parameters.Body=[Text.Encoding]::UTF8.GetBytes((ConvertTo-GitHubJson $Body)); $parameters.ContentType='application/json; charset=utf-8' }
     for ($attempt = 1; $attempt -le 3; $attempt++) {
         try { return Invoke-RestMethod @parameters }
         catch {
@@ -154,10 +218,15 @@ function Push-Ref {
     param([string[]]$PushArgs)
     $ErrorActionPreference = 'Continue'
     for ($attempt = 1; $attempt -le 3; $attempt++) {
-        & git -c http.version=HTTP/1.1 -c ('credential.username=' + $settings.owner) @PushArgs
-        if ($LASTEXITCODE -eq 0) { return }
-        if ($attempt -lt 3) { Start-Sleep -Seconds 2 }
+        $transferOutput = @(& git -c http.version=HTTP/1.1 -c ('credential.username=' + $settings.owner) @PushArgs 2>&1)
+        if ($LASTEXITCODE -eq 0) {
+            $transferOutput | ForEach-Object { Write-Host ([string]$_) }
+            if ($attempt -gt 1) { Write-Host ('第 ' + $attempt + ' 次连接重试成功。') -ForegroundColor Green }
+            return
+        }
+        if ($attempt -lt 3) { Write-Host ('Git 连接未完成，2 秒后重试（' + $attempt + '/3）…') -ForegroundColor Yellow; Start-Sleep -Seconds 2 }
     }
+    $transferOutput | ForEach-Object { Write-Host ([string]$_) }
     throw 'Git 推送未完成。请检查网络；如远端有其他改动，请先拉取并处理冲突后重试。脚本不会强制覆盖远端。'
 }
 
@@ -307,25 +376,33 @@ try {
     if ($SkipRelease) { Write-Host ('源码上传成功：' + $repository.html_url) -ForegroundColor Green; exit 0 }
     Write-Host '[5/6] 创建版本与上传 Release 文件…' -ForegroundColor Cyan
     $baseTag = 'v' + $patchVersion
-    $tag = $baseTag; $revision = 1
-    $release = Invoke-GitHub ('/repos/' + $fullName + '/releases/tags/' + $tag) -NotFoundOK
-    while ($release -and ($ForceRelease -or $release.target_commitish -ne $commit)) {
-        $revision++; $tag=$baseTag + '-r' + $revision
-        $release = Invoke-GitHub ('/repos/' + $fullName + '/releases/tags/' + $tag) -NotFoundOK
-    }
+    $selection = Select-GitHubReleaseTarget -FullName $fullName -BaseTag $baseTag -Commit $commit -Force ([bool]$ForceRelease)
+    $tag = $selection.Tag; $revision = $selection.Revision; $release = $selection.Release
+    Write-Host ('目标版本：' + $tag)
     $knownTags = @(& git tag --list $tag)
     if ($knownTags -contains $tag) {
         $tagCommit = (& git rev-list -n 1 ('refs/tags/' + $tag)).Trim()
         if ($tagCommit -ne $commit) { throw ('本地标签已指向其他提交：' + $tag) }
-    } else { Run-Git -GitArgs ($authorArgs + @('tag','-a',$tag,'-m',('Solbrand patch ' + $patchVersion + ', assistant ' + $assistantVersion))) }
-    Push-Ref -PushArgs @('push','origin',('refs/tags/' + $tag))
+    } elseif ($selection.RemoteCommit) { Run-Git -GitArgs @('fetch','origin',('refs/tags/' + $tag + ':refs/tags/' + $tag)) }
+    else { Run-Git -GitArgs ($authorArgs + @('tag','-a',$tag,'-m',('Solbrand patch ' + $patchVersion + ', assistant ' + $assistantVersion))) }
+    if (!$selection.RemoteCommit) { Push-Ref -PushArgs @('push','origin',('refs/tags/' + $tag)) }
+    else { Write-Host 'GitHub 上的标签已确认，无需重复推送。' }
     if (!$release) {
         $notesPath = Join-Path $taskRoot ('docs\release-v' + $patchVersion + '.md')
-        $notes = if (Test-Path -LiteralPath $notesPath) { Get-Content -LiteralPath $notesPath -Raw -Encoding UTF8 } else { '非官方简体中文汉化补丁与 Windows 助手。非商业性，仅供学习用途。' }
+        $notes = if (Test-Path -LiteralPath $notesPath) { [IO.File]::ReadAllText($notesPath,[Text.Encoding]::UTF8) } else { '非官方简体中文汉化补丁与 Windows 助手。非商业性，仅供学习用途。' }
         $title = '汉化 ' + $patchVersion + ' / 助手 ' + $assistantVersion
         if ($revision -gt 1) { $title += ' · 更新 ' + $revision }
-        try { $release = Invoke-GitHub ('/repos/' + $fullName + '/releases') -Method Post -Body @{tag_name=$tag;target_commitish=$commit;name=$title;body=$notes;draft=$true;prerelease=$false} }
-        catch { $release = Invoke-GitHub ('/repos/' + $fullName + '/releases/tags/' + $tag) -NotFoundOK; if (!$release) { throw } }
+        for ($createAttempt = 1; $createAttempt -le 3; $createAttempt++) {
+            Write-Host ('正在创建 Release 草稿：' + $tag + '…')
+            try { $release = Invoke-GitHub ('/repos/' + $fullName + '/releases') -Method Post -Body @{tag_name=$tag;target_commitish=$commit;name=$title;body=$notes;draft=$true;prerelease=$false}; break }
+            catch {
+                $release = Get-GitHubRelease -FullName $fullName -Tag $tag
+                if ($release) { break }
+                if ($createAttempt -eq 3) { throw }
+                Write-Host '草稿创建连接中断，已确认没有重复发布，准备重试…' -ForegroundColor Yellow
+                Start-Sleep -Seconds 2
+            }
+        }
     }
     foreach ($asset in $assets) {
         $assetName = [IO.Path]::GetFileName($asset)
@@ -336,11 +413,18 @@ try {
             continue
         }
         $uploadUrl = ($release.upload_url -split '\{')[0] + '?name=' + [Uri]::EscapeDataString($assetName)
-        try { $null = Invoke-GitHub $uploadUrl -Method Post -UploadFile $asset }
-        catch {
-            $current = Invoke-GitHub ('/repos/' + $fullName + '/releases/' + $release.id)
-            $check = @($current.assets | Where-Object { $_.name -eq $assetName -and $_.size -eq (Get-Item -LiteralPath $asset).Length })
-            if (!$check.Count) { throw }
+        $digest = 'sha256:' + (Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant()
+        for ($uploadAttempt = 1; $uploadAttempt -le 3; $uploadAttempt++) {
+            Write-Host ('正在上传：' + $assetName + '…')
+            try { $null = Invoke-GitHub $uploadUrl -Method Post -UploadFile $asset; break }
+            catch {
+                $current = Invoke-GitHub ('/repos/' + $fullName + '/releases/' + $release.id)
+                $check = @($current.assets | Where-Object { $_.name -eq $assetName -and $_.digest -eq $digest -and $_.state -eq 'uploaded' })
+                if ($check.Count) { break }
+                if ($uploadAttempt -eq 3) { throw }
+                Write-Host '附件上传连接中断，正在核对并重试…' -ForegroundColor Yellow
+                Start-Sleep -Seconds 2
+            }
         }
         Write-Host ('已上传：' + $assetName)
     }

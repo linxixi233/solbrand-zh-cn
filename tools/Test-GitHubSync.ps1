@@ -78,5 +78,42 @@ Pass 'token-shaped source rejection without printing its value'
 $script:githubHeaders = @{}
 Must-Reject { Invoke-GitHub 'https://example.invalid/user' } 'Credential forwarding to a non-GitHub host was accepted.'
 Pass 'API credentials are restricted to GitHub hosts'
+$notesPath = Join-Path $taskRoot 'notes.md'
+$notesText = 'Release notes: 中文说明与原始文本。'
+[IO.File]::WriteAllText($notesPath,$notesText,[Text.Encoding]::UTF8)
+$extendedNotes = Get-Content -LiteralPath $notesPath -Raw -Encoding UTF8
+$payloadJson = ConvertTo-GitHubJson @{body=$extendedNotes;draft=$true;labels=@('test');empty=@()}
+$payload = $payloadJson | ConvertFrom-Json
+Assert ($payload.body -is [string] -and $payload.body -eq $notesText) 'File metadata changed the release body from text into an object.'
+Assert ($payloadJson -notmatch 'PSPath|PSDrive|PSProvider') 'Filesystem metadata leaked into the release payload.'
+Assert ($payload.draft -eq $true -and $payload.labels.Count -eq 1 -and $payload.empty.Count -eq 0) 'Payload normalization changed JSON values.'
+Pass 'release notes serialize as plain text without filesystem metadata'
+function Invoke-GitHub {
+    param([string]$Path,[string]$Method='Get',$Body=$null,[switch]$NotFoundOK,[string]$UploadFile='')
+    if ($Path -match '/releases/tags/') { return $null }
+    if ($Path -match '/releases\?') { return @([pscustomobject]@{id=40;tag_name='other';draft=$false},[pscustomobject]@{id=42;tag_name='v9.9.9-r2';draft=$true}) }
+    throw 'An offline release test attempted an unexpected API call.'
+}
+$draft = Get-GitHubRelease -FullName 'fixture/repo' -Tag 'v9.9.9-r2'
+Assert ($draft.id -eq 42 -and $draft.draft) 'An existing draft was not found during resume.'
+Pass 'draft releases are found through the owner release list'
+Run-Git -GitArgs @('tag','v9.9.9',$localHead)
+$script:mockReleases = @{}
+$script:mockTags = @{'v9.9.9'=$localHead}
+function Get-GitHubRelease { param([string]$FullName,[string]$Tag); return $script:mockReleases[$Tag] }
+function Get-GitHubTagCommit { param([string]$FullName,[string]$Tag); return $script:mockTags[$Tag] }
+$newCommit = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+$target = Select-GitHubReleaseTarget -FullName 'fixture/repo' -BaseTag 'v9.9.9' -Commit $newCommit
+Assert ($target.Tag -eq 'v9.9.9-r2') 'An old tag without a release was incorrectly reused for a new commit.'
+Assert ((& git rev-list -n 1 refs/tags/v9.9.9).Trim() -eq $localHead) 'An existing tag was moved.'
+Pass 'an existing tag without a release is preserved and the next revision is selected'
+$script:mockTags['v9.9.9-r2']=$newCommit
+$script:mockReleases['v9.9.9-r2']=[pscustomobject]@{id=42;draft=$true;target_commitish=$newCommit}
+$target = Select-GitHubReleaseTarget -FullName 'fixture/repo' -BaseTag 'v9.9.9' -Commit $newCommit
+Assert ($target.Tag -eq 'v9.9.9-r2' -and $target.Release.id -eq 42) 'A matching draft was not resumed.'
+Pass 'matching drafts and remote tags are reused without duplicates'
+$target = Select-GitHubReleaseTarget -FullName 'fixture/repo' -BaseTag 'v9.9.9' -Commit $newCommit -Force $true
+Assert ($target.Tag -eq 'v9.9.9-r3') 'Forced publication did not select an unused revision.'
+Pass 'forced publication chooses an unused revision'
 Set-Location -LiteralPath $workspace
 Write-Host ('ALL PASSED: ' + $passed)
