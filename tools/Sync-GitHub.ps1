@@ -218,7 +218,7 @@ function Push-Ref {
     param([string[]]$PushArgs)
     $ErrorActionPreference = 'Continue'
     for ($attempt = 1; $attempt -le 3; $attempt++) {
-        $transferOutput = @(& git -c http.version=HTTP/1.1 -c ('credential.username=' + $settings.owner) @PushArgs 2>&1)
+        $transferOutput = @(& git @script:gitNetworkOptions -c ('credential.username=' + $settings.owner) @PushArgs 2>&1)
         if ($LASTEXITCODE -eq 0) {
             $transferOutput | ForEach-Object { Write-Host ([string]$_) }
             if ($attempt -gt 1) { Write-Host ('第 ' + $attempt + ' 次连接重试成功。') -ForegroundColor Green }
@@ -263,9 +263,11 @@ try {
     }
     $proxy = [Net.WebRequest]::DefaultWebProxy
     $githubUri = [Uri]'https://github.com'
+    $script:gitNetworkOptions = @('-c','http.version=HTTP/1.1','-c','http.sslBackend=schannel','-c','http.sslVerify=true')
     if ($proxy -and !$proxy.IsBypassed($githubUri)) {
         $proxyUri = $proxy.GetProxy($githubUri)
         $env:HTTPS_PROXY = $proxyUri.AbsoluteUri; $env:HTTP_PROXY = $proxyUri.AbsoluteUri
+        $script:gitNetworkOptions += @('-c',('http.proxy=' + $proxyUri.AbsoluteUri))
     }
     Write-Host '[1/6] 检查 GitHub 登录…' -ForegroundColor Cyan
     $credential = Get-GitHubCredential
@@ -295,8 +297,10 @@ try {
         }
         if (!$reuseBuild) {
             $node = Find-Node; $originalPack = Find-OriginalPack
-            & $node tools/build.mjs $originalPack | Out-Host
-            if ($LASTEXITCODE -ne 0) { throw '补丁构建失败；未上传旧的安装包。' }
+            $buildOutput = @(& $node tools/build.mjs $originalPack)
+            if ($LASTEXITCODE -ne 0) { $buildOutput | ForEach-Object { Write-Host $_ }; throw '补丁构建失败；未上传旧的安装包。' }
+            $buildManifest = [IO.File]::ReadAllText((Join-Path $taskRoot 'dist\manifest.json'),[Text.Encoding]::UTF8) | ConvertFrom-Json
+            Write-Host ('补丁构建完成：v' + $buildManifest.version + '，场景 ' + $buildManifest.localizedScenes + '，匹配词条 ' + $buildManifest.uiMessages + '。')
             & (Join-Path $taskRoot 'installer\build.ps1') | Out-Host
             $testOutput = @(& (Join-Path $taskRoot 'dist\SolbrandZh.Tests.exe') 2>&1)
             $testExit = $LASTEXITCODE; $testOutput | ForEach-Object { Write-Host $_ }
@@ -383,7 +387,7 @@ try {
     if ($knownTags -contains $tag) {
         $tagCommit = (& git rev-list -n 1 ('refs/tags/' + $tag)).Trim()
         if ($tagCommit -ne $commit) { throw ('本地标签已指向其他提交：' + $tag) }
-    } elseif ($selection.RemoteCommit) { Run-Git -GitArgs @('fetch','origin',('refs/tags/' + $tag + ':refs/tags/' + $tag)) }
+    } elseif ($selection.RemoteCommit) { Run-Git -GitArgs ($script:gitNetworkOptions + @('fetch','origin',('refs/tags/' + $tag + ':refs/tags/' + $tag))) }
     else { Run-Git -GitArgs ($authorArgs + @('tag','-a',$tag,'-m',('Solbrand patch ' + $patchVersion + ', assistant ' + $assistantVersion))) }
     if (!$selection.RemoteCommit) { Push-Ref -PushArgs @('push','origin',('refs/tags/' + $tag)) }
     else { Write-Host 'GitHub 上的标签已确认，无需重复推送。' }
