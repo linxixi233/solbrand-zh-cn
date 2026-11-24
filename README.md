@@ -88,15 +88,6 @@ pwsh -File tools/run-lifecycle-validation.ps1 -GodotExe "D:\path\to\godot.exe"
 pwsh -File tools/run-lifecycle-validation.ps1 -GodotExe "D:\path\to\godot.exe" -ScriptName coverage.gd -LogName coverage
 ```
 
-## 一键上传（维护者）
-
-双击根目录的 **`一键上传到GitHub.cmd`**。首次按 Git for Windows 凭据管理器的提示完成设备授权，脚本会在该账号下创建公开仓库 `solbrand-zh-cn`，构建、测试、上传源码并发布包含 EXE、ZIP 与校验值的 Release。
-
-之后每次修改完成后再次双击即可。无改动时跳过；同一补丁版本有新提交时，使用 `-r2`、`-r3` 等新的 Release 标签。网络中断后可再次运行，复用与当前源码一致且校验通过的构建。可使用 `-SkipRelease` 仅上传源码，详见 [一键上传说明](一键上传说明.txt)。
-
-脚本使用 GitHub 官方 REST API，令牌由 Git 凭据管理器管理，不写入源码或项目配置。上传白名单排除游戏原版、提取目录、存档和本机配置。
-
-脚本已处理 Windows PowerShell 的 UTF-8 BOM 输入差异，可复用已保存的网页授权。仅检查现有授权可执行 `powershell -File tools/Sync-GitHub.ps1 -CheckLogin`；上传工具的离线回归测试为 `powershell -File tools/Test-GitHubSync.ps1`，包括凭据协议编码、文件排除、提交和本地远端推送验证，不需要真实 GitHub 账号。
 
 ## 参与与许可
 

@@ -20,7 +20,7 @@ if (Test-Path -LiteralPath $settingsPath) {
 }
 $allowedPaths = @('.gitignore','README.md','LICENSE','NOTICE.md','CONTRIBUTING.md','CHANGELOG.md',
     'Prepare-Chinese.ps1','Start-Chinese.cmd','美化版-使用方法.txt','非商业学习说明.txt','术语表.txt',
-    '一键上传到GitHub.cmd','一键上传说明.txt','installer','patch','translations','tools','docs')
+    'installer','patch','translations','tools','docs')
 $sourcePaths = @($allowedPaths | Where-Object { Test-Path -LiteralPath (Join-Path $taskRoot $_) })
 
 function Save-Settings {

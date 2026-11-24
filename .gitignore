@@ -19,6 +19,9 @@ Solbrand-ZH.path.txt
 .codex/
 .agents/
 .github-upload.local.json
+# Maintainer launchers remain local; removed from the public repository.
+一键上传到GitHub.cmd
+一键上传说明.txt
 # Local experimental launchers, not part of the supported build.
 tools/NativeQa.cs
 tools/launch-native-qa.ps1
