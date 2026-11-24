@@ -268,6 +268,32 @@ namespace SolbrandZh {
                     Assert(newer.Inspect(dir).SteamUpdated,"Latest original lost priority over an old state record.");
                     newer.Install(dir);newer.Restore(dir);
                 });
+                if (args.Length > 0 && args[0] == "--upgrade-installed") {
+                    Test("actual installed patch copy: one-click upgrade and exact original rollback", delegate {
+                        Assert(args.Length==2,"Usage: --upgrade-installed <game directory>");
+                        var sourceDir=Path.GetFullPath(args[1]);var dir=Child(root,"real-patch-upgrade");Directory.CreateDirectory(dir);
+                        var target=Child(dir,"Solbrand.pck");var backup=PatchEngine.BackupFile(dir);
+                        var source=Child(sourceDir,"Solbrand.pck");var original=PatchEngine.BackupFile(sourceDir);
+                        var sourceHash=PatchEngine.HashFile(source);var originalHash=PatchEngine.HashFile(original);
+                        try {
+                            Console.WriteLine("Copying installed patch, original backup and state into isolated test folder...");
+                            File.Copy(source,target);Directory.CreateDirectory(PatchEngine.BackupDirectory(dir));File.Copy(original,backup);
+                            File.Copy(Child(PatchEngine.BackupDirectory(sourceDir),"state.json"),Child(PatchEngine.BackupDirectory(dir),"state.json"));
+                            File.WriteAllText(Child(dir,"Solbrand.exe"),"TEST FIXTURE: cannot launch game");
+                            File.WriteAllText(Child(dir,"save-sentinel.dat"),"unchanged");
+                            var engine=PatchEngine.Embedded();engine.CheckGameClosed=delegate{};
+                            Assert(engine.Inspect(dir).Kind==GameStatus.UpdateAvailable,"Installed patch is not eligible for upgrade.");
+                            engine.Install(dir);Assert(engine.Inspect(dir).Kind==GameStatus.Patched,"Upgrade failed.");
+                            Assert(PatchEngine.HashFile(backup)==originalHash,"Upgrade changed the original backup.");
+                            engine.Restore(dir);Assert(PatchEngine.HashFile(target)==originalHash,"Rollback changed the original.");
+                            Assert(File.ReadAllText(Child(dir,"save-sentinel.dat"))=="unchanged","Upgrade changed saves.");
+                            Assert(PatchEngine.HashFile(source)==sourceHash&&PatchEngine.HashFile(original)==originalHash,"Installed game was changed by the test!");
+                            Console.WriteLine("Original/backup/restored SHA256: "+originalHash);
+                        } finally {
+                            foreach(var file in new[]{target,backup}){Assert(Path.GetFullPath(file).StartsWith(root+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase),"Unsafe cleanup.");if(File.Exists(file))File.Delete(file);}
+                        }
+                    });
+                }
                 if (args.Length > 0 && args[0] == "--steam-update") {
                     Test("actual Steam update: preserve legacy archive, install new build, exact new-build rollback", delegate {
                         Assert(args.Length==4,"Usage: --steam-update <new-original.pck> <old-backup.pck> <old-state.json>");

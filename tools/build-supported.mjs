@@ -8,6 +8,9 @@ const input=process.argv[2];if(!input)throw Error('Usage: node tools/build-suppo
 const full=path.resolve(input),directory=fs.statSync(full).isDirectory()?full:path.dirname(full);
 const candidates=new Set([fs.statSync(full).isFile()?full:path.join(full,'Solbrand.pck'),path.join(directory,'Solbrand.pck'),path.join(directory,'.solbrand-zh','Solbrand.pck.original')]);
 if(path.basename(directory)==='.solbrand-zh')candidates.add(path.join(path.dirname(directory),'Solbrand.pck'));
+const gameDirectory=path.basename(directory)==='.solbrand-zh'?path.dirname(directory):directory;
+const archived=path.join(gameDirectory,'.solbrand-zh','archive');
+if(fs.existsSync(archived))for(const entry of fs.readdirSync(archived,{withFileTypes:true}))if(entry.isDirectory())candidates.add(path.join(archived,entry.name,'Solbrand.pck.original'));
 const found=new Map();
 function identify(file){
  if(!fs.existsSync(file))return null;

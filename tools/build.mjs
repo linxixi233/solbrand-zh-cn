@@ -78,9 +78,14 @@ Object.assign(dictionary,proseDictionary);
 const expanded=JSON.parse(fs.readFileSync('translations/expanded.zh.json','utf8'));
 Object.assign(dictionary,expanded);
 const bbcode=s=>[...s.matchAll(/\[(?:\/?[a-zA-Z][^\]]*)\]/g)].map(x=>x[0]).sort();
+const readableManual=new Set([
+ 'Restore and study PERIODICALS burnt b[x]y the sun to gle[/x]an critical information in [x]your search for answers.',
+ '[x]THIS IS AN OPTIONAL NOTICE[/x]'
+]);
 for(const [source,target]of Object.entries(dictionary)){
  if(typeof target!=='string'||!target.length)throw Error('Empty dictionary entry: '+source);
- if(!['[REDACTED]','[OBSERVATION IS KEY]','[NONE]','[NULL FRAGMENT]'].includes(source)&&JSON.stringify(bbcode(source))!==JSON.stringify(bbcode(target)))throw Error('Dictionary BBCode changed: '+source);
+ const comparableSource=readableManual.has(source)?source.replace(/\[\/?x\]/g,''):source;
+ if(!['[REDACTED]','[OBSERVATION IS KEY]','[NONE]','[NULL FRAGMENT]'].includes(source)&&JSON.stringify(bbcode(comparableSource))!==JSON.stringify(bbcode(target)))throw Error('Dictionary BBCode changed: '+source);
  const links=s=>[...s.matchAll(/(?:uid|res):\/\/[^\s\[\]"<>]+/g)].map(x=>x[0]).sort();
  if(JSON.stringify(links(source))!==JSON.stringify(links(target)))throw Error('Dictionary resource link changed: '+source);
 }
@@ -169,7 +174,7 @@ overlay('dist/solbrand-zh-overlay.pck',replacements);
 const rebuilt=readPack('dist/solbrand-zh-overlay.pck');
 for(const [name,expected]of replacements)if(!rebuilt.read(name).equals(expected))throw Error('Overlay verification failed: '+name);
 fs.closeSync(rebuilt.fd);
-const manifest={version:'0.4.0',steamBuild,sourcePackSize:fs.statSync(sourcePackPath).size,
+const manifest={version:'0.4.1',steamBuild,sourcePackSize:fs.statSync(sourcePackPath).size,
  sourceProjectMd5:md5(project).toString('hex'),sourceStoryMd5:pack.entries.get(expectedStory).digest.toString('hex'),
  uiSourceEntries:Object.keys(JSON.parse(fs.readFileSync('translations/ui.zh.json'))).length,manualSourceEntries:Object.keys(manualDictionary).length,proseSourceEntries:Object.keys(proseDictionary).length,uiMessages:Object.keys(dictionary).length,
  tutorialUniqueTranslations:tutorialMap.size,tutorialReplacedTokens:translatedTokens,tutorialSourceUnique: tutorial.length,

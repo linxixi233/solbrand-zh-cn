@@ -1,6 +1,6 @@
 import {resource} from './inspect-settings.mjs';
 import {rewriteResource} from './localize-resources.mjs';
-export const isVisibleProperty=k=>/^(?:text|Text|Title|Origin|TitleText|TypeText|PrimaryText|SecondaryText|TranslationText|LabelText|RegionName|DisplayName|tooltip_text|placeholder_text)$/.test(k);
+export const isVisibleProperty=k=>/^(?:text|Text|Title|Description|Notice|Origin|TitleText|TypeText|PrimaryText|SecondaryText|TranslationText|LabelText|RegionName|DisplayName|tooltip_text|placeholder_text)$/.test(k);
 export function sceneNodes(data){
  const b=data.internals.at(-1)?.properties._bundled;if(!b)return [];
  const names=b['"names"'],variants=b['"variants"'],nodes=b['"nodes"'];let at=0;const result=[];

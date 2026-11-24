@@ -69,7 +69,7 @@ namespace SolbrandZh {
         bool gameRunning;
         public MainForm(PatchEngine patch, string initialFolder) {
             engine = patch;
-            Text = "Solbrand 汉化助手 1.4 · 非商业学习版";
+            Text = "Solbrand 汉化助手 1.4.1 · 非商业学习版";
             Font = new Font("Microsoft YaHei UI", 9.5F);
             BackColor = Palette.Paper; ForeColor = ink;
             AutoScaleDimensions = new SizeF(96, 96); AutoScaleMode = AutoScaleMode.Dpi;
@@ -159,7 +159,7 @@ namespace SolbrandZh {
             var footer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = new Padding(0), Padding = new Padding(0, 10, 0, 0) };
             footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220));
             footer.Controls.Add(new Label { Text = "非官方汉化 · 非商业性，仅供学习用途", Dock = DockStyle.Fill, ForeColor = muted, TextAlign = ContentAlignment.MiddleLeft, Font = new Font(Font.FontFamily, 9F), Margin = new Padding(0) }, 0, 0);
-            footer.Controls.Add(new Label { Text = "助手 1.4  /  补丁 " + engine.Manifest.version, Dock = DockStyle.Fill, ForeColor = muted, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Font.FontFamily, 8.5F), Margin = new Padding(0) }, 1, 0);
+            footer.Controls.Add(new Label { Text = "助手 1.4.1  /  补丁 " + engine.Manifest.version, Dock = DockStyle.Fill, ForeColor = muted, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Font.FontFamily, 8.5F), Margin = new Padding(0) }, 1, 0);
             body.Controls.Add(footer, 0, 7);
 
             var nextActions = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, Margin = new Padding(0) };

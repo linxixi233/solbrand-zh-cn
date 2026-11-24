@@ -292,7 +292,11 @@ try {
     if (!$SkipRelease) {
         Write-Host '[2/6] 构建汉化助手与发布包…' -ForegroundColor Cyan
         $app = Join-Path $taskRoot 'dist\Solbrand汉化助手-美化版.exe'
-        $zipPackage = Join-Path $taskRoot 'dist\Solbrand汉化助手-1.4-美化版.zip'
+        $versionSource = [IO.File]::ReadAllText((Join-Path $taskRoot 'installer\AssemblyInfo.cs'))
+        $versionMatch = [regex]::Match($versionSource,'AssemblyFileVersion\("([0-9.]+)"\)')
+        if (!$versionMatch.Success) { throw '无法读取助手版本，未使用旧安装包。' }
+        $sourceAssistantVersion = $versionMatch.Groups[1].Value -replace '\.0$',''
+        $zipPackage = Join-Path $taskRoot ('dist\Solbrand汉化助手-' + $sourceAssistantVersion + '-美化版.zip')
         $reuseBuild = !$ForceRelease -and $settings.ContainsKey('lastBuildSourceHash') -and $settings.lastBuildSourceHash -eq $sourceHash -and (Test-Path -LiteralPath $app) -and (Test-Path -LiteralPath $zipPackage)
         if ($reuseBuild) {
             $reuseBuild = (Get-FileHash -LiteralPath $app -Algorithm SHA256).Hash -eq $settings.lastBuildExeHash -and (Get-FileHash -LiteralPath $zipPackage -Algorithm SHA256).Hash -eq $settings.lastBuildZipHash

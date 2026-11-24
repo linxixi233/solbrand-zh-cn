@@ -14,8 +14,12 @@ var markup := RegEx.create_from_string("\\[[^\\]]*\\]")
 var captions: Dictionary = {}
 var button_labels: Dictionary = {}
 var latin_words := RegEx.create_from_string("[A-Za-z]{2,}")
+var spaced_letters := RegEx.create_from_string("^[A-Za-z](?:[ \\t]+[A-Za-z]){2,}$")
+const APPENDED_MISSION := "The Captain told me to follow my predecessor's air line to ensure it's in working order."
 
 func _enter_tree() -> void:
+	# Pause menus and their late-created labels must still be localized.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	var data = JSON.parse_string(FileAccess.get_file_as_string("res://ZhPatch/zh_CN.json"))
 	if data is Dictionary:
 		dictionary = data
@@ -116,9 +120,11 @@ func _process(delta: float) -> void:
 			continue
 		# Game code can replace LabelSettings, themes and FontVariations after ready.
 		_prepare(reference)
+		if control is RichTextLabel:
+			_refresh_appended_text(control)
 		if control is Label or control is RichTextLabel or control is Button or control is Label3D:
 			var original: String = control.text
-			if not original.is_empty() and not dictionary.has(original) and latin_words.search(original) != null and not seen.has("translation:" + original):
+			if not original.is_empty() and not dictionary.has(original) and (latin_words.search(original) != null or spaced_letters.search(original.strip_edges()) != null) and not seen.has("translation:" + original):
 				seen["translation:" + original] = true
 				var translated := _translate_display(original)
 				if translated != original:
@@ -136,11 +142,24 @@ func _process(delta: float) -> void:
 					log_file.store_line(JSON.stringify({"path": str(control.get_path()), "text": control.text}))
 
 func _translate_piece(text: String) -> String:
+	if text.contains("\n"):
+		var lines := PackedStringArray()
+		for line in text.split("\n"):
+			lines.append(_translate_piece(line))
+		return "\n".join(lines)
 	var stripped := text.strip_edges()
 	if stripped.is_empty():
 		return text
 	if dictionary.has(stripped):
 		return text.replace(stripped, dictionary[stripped])
+	# Some menu labels insert spaces between the English letters.
+	if spaced_letters.search(stripped) != null:
+		var compact := stripped.replace(" ", "").replace("\t", "")
+		if dictionary.has(compact):
+			return text.replace(stripped, dictionary[compact])
+	var bullet := RegEx.create_from_string("^([ \\t•◆◇♦◈▪▸▶*—–-]+)(.*)$").search(text)
+	if bullet != null and dictionary.has(bullet.get_string(2).strip_edges()):
+		return bullet.get_string(1) + _translate_piece(bullet.get_string(2))
 	var result := text
 	for entry in display_names:
 		result = entry.pattern.sub(result, entry.translation, true)
@@ -159,6 +178,30 @@ func _translate_display(text: String) -> String:
 		result += matched.get_string()
 		cursor = matched.get_end()
 	return result + _translate_piece(text.substr(cursor))
+
+func _refresh_appended_text(control: RichTextLabel) -> void:
+	# append_text()/push_*() do not populate RichTextLabel.text, so native
+	# automatic translation never sees these generated log/menu entries.
+	if not control.text.is_empty():
+		return
+	var source := control.get_parsed_text()
+	if source.is_empty():
+		return
+	var stripped := source.strip_edges()
+	# Other log screens contain clickable links and deliberate rich formatting.
+	# Rebuild only the compiled-in mission line that bypasses resource translation.
+	var log_entry := "logg" in str(control.get_path()).to_lower() and source.contains(APPENDED_MISSION)
+	var menu_key := stripped.replace(" ", "").replace("\t", "").to_upper()
+	var menu_entry := not "logg" in str(control.get_path()).to_lower() and menu_key in ["CONTINUE", "CONTINUEGAME", "RESUME", "RESUMEGAME", "NEWGAME", "OPTIONS", "SETTINGS", "BACK", "RETURN", "QUIT", "EXIT", "QUITGAME", "MAINMENU", "LOADGAME"]
+	if not log_entry and not menu_entry:
+		return
+	var translated := _translate_display(source)
+	if translated == source:
+		return
+	# Keep .text empty and leave the mission/save data untouched. The game
+	# remains free to clear or append more entries on its next refresh.
+	control.clear()
+	control.append_text(translated)
 
 func _attach_caption(reference: WeakRef) -> void:
 	var sprite = reference.get_ref()

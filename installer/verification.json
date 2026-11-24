@@ -1,13 +1,13 @@
 ﻿{
-    "installerVersion":  "1.4.0",
-    "patchVersion":  "0.4.0",
+    "installerVersion":  "1.4.1",
+    "patchVersion":  "0.4.1",
     "sourceBuild":  "26869508",
     "tests":  16,
     "localizedScenes":  65,
     "sceneTextProperties":  313,
     "proseResources":  349,
     "sourceUnchangedSha256":  "bf7492e0b375367cb3d31a4239173dff76a83ec48b17f3825c9f4d890371532c",
-    "exeSha256":  "14c913afb1586996f7e6977d3972b6036e0073751482b2da87417e473ab8b495",
+    "exeSha256":  "62e7a4c00e7d39157bfa806a58aa2da13cf490c1810e02f9c3cf46072860d90e",
     "godotTests":  [
                        "lifecycle",
                        "late font assignment",
@@ -37,5 +37,14 @@
                              ],
     "steamUpdateRealCopyVerified":  true,
     "legacyRealCopyVerified":  true,
-    "legacyArchiveSha256":  "9330146336485b5e05d68a41099ffa839acac5c5d39b511e81e1900d7de8e68a"
+    "legacyArchiveSha256":  "9330146336485b5e05d68a41099ffa839acac5c5d39b511e81e1900d7de8e68a",
+    "textGapRegressions":  [
+                               "paused menu",
+                               "letter-spaced CONTINUE",
+                               "append-only mission logs",
+                               "append and redraw",
+                               "complete periodical instructions",
+                               "unrelated rich links preserved"
+                           ],
+    "upgradeFrom040RealCopyVerified":  true
 }
