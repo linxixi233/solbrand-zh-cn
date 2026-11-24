@@ -16,6 +16,17 @@ $commonArgs = @('/nologo','/codepage:65001','/optimize+','/platform:anycpu',
     "/resource:$PSScriptRoot\solbrand.ico,patch.icon",
     "/resource:$taskRoot\dist\manifest.json,patch.manifest",
     "/resource:$taskRoot\dist\solbrand-zh-overlay.pck,patch.overlay")
+foreach ($profileDir in @(Get-ChildItem -LiteralPath (Join-Path $outputDirectory 'builds') -Directory -ErrorAction SilentlyContinue)) {
+    $profileManifest = Join-Path $profileDir.FullName 'manifest.json'
+    $profileOverlay = Join-Path $profileDir.FullName 'solbrand-zh-overlay.pck'
+    if ((Test-Path -LiteralPath $profileManifest) -and (Test-Path -LiteralPath $profileOverlay)) {
+        $profileData = [IO.File]::ReadAllText($profileManifest) | ConvertFrom-Json
+        $currentData = [IO.File]::ReadAllText((Join-Path $outputDirectory 'manifest.json')) | ConvertFrom-Json
+        if ($profileData.steamBuild -eq $currentData.steamBuild) { continue }
+        if ($profileData.version -ne $currentData.version) { throw 'Cached build profile is outdated; rebuild it before packaging.' }
+        $commonArgs += @("/resource:$profileManifest,build.$($profileDir.Name).manifest", "/resource:$profileOverlay,build.$($profileDir.Name).overlay")
+    }
+}
 & $compiler @commonArgs '/target:winexe' "/out:$outputDirectory\Solbrand汉化助手-美化版.exe" @sources
 if ($LASTEXITCODE -ne 0) { throw 'GUI build failed.' }
 if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'SelfTests.cs')) {

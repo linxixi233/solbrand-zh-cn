@@ -37,14 +37,14 @@ namespace SolbrandZh {
                 return stream.ToArray();
             }
         }
-        static PatchEngine Fixture(string dir, string version = "0.2.0", bool writeOriginal = true) {
+        static PatchEngine Fixture(string dir, string version = "0.2.0", bool writeOriginal = true, string buildSuffix = "") {
             Directory.CreateDirectory(dir);
             var original = CreatePack(new Dictionary<string, byte[]> {
-                {"project.binary", Data("original settings")}, {PatchEngine.Story, Data("original story")},
-                {"Data/中文路径/unchanged.bin", Enumerable.Repeat((byte)137, 4 * 1024 * 1024).ToArray()}
+                {"project.binary", Data("original settings" + buildSuffix)}, {PatchEngine.Story, Data("original story" + buildSuffix)},
+                {"Data/中文路径/unchanged.bin", Enumerable.Repeat((byte)137, 4 * 1024 * 1024 + buildSuffix.Length * 128).ToArray()}
             }, 4, 112);
             var patch = CreatePack(new Dictionary<string, byte[]> {
-                {"project.binary", Data("localized settings")}, {PatchEngine.Story, Data("中文剧情")},
+                {"project.binary", Data("localized settings" + buildSuffix)}, {PatchEngine.Story, Data("中文剧情" + buildSuffix)},
                 {"ZhPatch/zh_CN.json", Data("{\"Hello\":\"你好\"}")},
                 {"ZhPatch/ZhPatch.gd", Data("extends Node # version " + version)}
             }, 3, 128);
@@ -54,8 +54,8 @@ namespace SolbrandZh {
                 File.WriteAllText(Path.Combine(dir, "save-sentinel.dat"), "untouched save");
             }
             var engine = new PatchEngine(new PatchManifest { version = version, steamBuild = "fixture",
-                sourcePackSize = original.Length, sourceProjectMd5 = Md5(Data("original settings")),
-                sourceStoryMd5 = Md5(Data("original story")) }, patch);
+                sourcePackSize = original.Length, sourceProjectMd5 = Md5(Data("original settings" + buildSuffix)),
+                sourceStoryMd5 = Md5(Data("original story" + buildSuffix)) }, patch);
             // Only workspace fixtures bypass detection of an unrelated running real game.
             engine.CheckGameClosed = delegate { };
             return engine;
@@ -99,6 +99,9 @@ namespace SolbrandZh {
                         form.ApplyInspection(latest,false);
                         Assert(Descendants(form).OfType<Button>().Any(b=>b.Text=="已安装最新汉化"&&!b.Enabled),"Latest version allows duplicate installation.");
                         Assert(Descendants(form).OfType<Button>().Any(b=>b.Text=="在 Steam 中启动游戏"&&b.Enabled),"Completed installation has no launch action.");
+                        form.ApplyInspection(new StatusInfo {Kind=GameStatus.UpdateAvailable,SteamUpdated=true,Title="Steam 已更新 · 需要重新汉化",Detail="旧版备份将归档，新版原版单独备份。"},false);
+                        Assert(Descendants(form).OfType<Button>().Any(b=>b.Text=="更新至 "+engine.Manifest.version&&b.Enabled),"Steam update action missing.");
+                        Assert(!Descendants(form).OfType<Button>().Any(b=>b.Text=="回退原版"&&b.Enabled),"Steam update offers an old-build rollback.");
                         form.ApplyInspection(engine.Inspect(game),false);
                         Assert(Descendants(form).OfType<Label>().Any(l=>l.Text.Contains("非商业性，仅供学习用途")),"Learning-use notice missing.");
                         RenderPreview(form,Child(workspace,@"analysis\installer-v1.3-preview.png"));
@@ -223,6 +226,80 @@ namespace SolbrandZh {
                     Reject(() => engine.Restore(dir), "Running-game restore not rejected.");
                     Assert(PatchEngine.HashFile(Child(dir, "Solbrand.pck")) == before, "Running-game guard changed file.");
                 });
+                Test("Steam update archives old backup and rollback restores the NEW original", delegate {
+                    var dir=Child(root,"steam-updated"); var old=Fixture(dir,"0.3.0");
+                    var oldHash=PatchEngine.HashFile(Child(dir,"Solbrand.pck")); old.Install(dir);
+                    var newer=Fixture(dir,"0.4.0",true,"new-build");
+                    var newHash=PatchEngine.HashFile(Child(dir,"Solbrand.pck"));
+                    Assert(newer.Inspect(dir).SteamUpdated,"Steam update with old journal was not recognized.");
+                    newer.Install(dir);
+                    Assert(newer.Inspect(dir).Kind==GameStatus.Patched,"New game was not localized.");
+                    Assert(PatchEngine.HashFile(PatchEngine.BackupFile(dir))==newHash,"New original was not backed up.");
+                    var archives=Directory.GetFiles(Child(PatchEngine.BackupDirectory(dir),"archive"),"Solbrand.pck.original",SearchOption.AllDirectories);
+                    Assert(archives.Length==1&&PatchEngine.HashFile(archives[0])==oldHash,"Old backup was lost or changed.");
+                    newer.Restore(dir);
+                    Assert(PatchEngine.HashFile(Child(dir,"Solbrand.pck"))==newHash,"Rollback downgraded the game!");
+                    Assert(File.ReadAllText(Child(dir,"save-sentinel.dat"))=="untouched save","Steam update touched saves.");
+                });
+                Test("Steam update refuses corrupt legacy backup without touching new game", delegate {
+                    var dir=Child(root,"updated-corrupt");var old=Fixture(dir,"0.3.0");old.Install(dir);
+                    var newer=Fixture(dir,"0.4.0",true,"new-build");var before=PatchEngine.HashFile(Child(dir,"Solbrand.pck"));
+                    File.AppendAllText(PatchEngine.BackupFile(dir),"corruption");
+                    Reject(()=>newer.Install(dir),"Corrupt old backup was silently replaced.");
+                    Assert(PatchEngine.HashFile(Child(dir,"Solbrand.pck"))==before,"New game was damaged.");
+                    Assert(File.Exists(PatchEngine.BackupFile(dir)),"Corrupt backup was deleted.");
+                });
+                Test("restore after Steam update preserves new original and archives old backup", delegate {
+                    var dir=Child(root,"restore-updated");var old=Fixture(dir,"0.3.0");old.Install(dir);
+                    var newer=Fixture(dir,"0.4.0",true,"new-build");var before=PatchEngine.HashFile(Child(dir,"Solbrand.pck"));
+                    newer.Restore(dir);
+                    Assert(PatchEngine.HashFile(Child(dir,"Solbrand.pck"))==before,"Restore overwrote a Steam update.");
+                    Assert(newer.Inspect(dir).Kind==GameStatus.Original,"New original cannot be installed after archive.");
+                });
+                Test("bundled profiles select correct build for fresh, patched and updated files", delegate {
+                    var dir=Child(root,"multi-profile");var old=Fixture(dir,"0.3.0");old.Install(dir);
+                    var newer=Fixture(Child(root,"profile-source"),"0.4.0",true,"new-build");
+                    newer.CompatibleBuilds.Add(Fixture(dir,"0.4.0",false));
+                    Assert(newer.Inspect(dir).Kind==GameStatus.UpdateAvailable,"Old patched build was not selected.");
+                    newer.Install(dir);Assert(newer.Inspect(dir).Kind==GameStatus.Patched,"Old build upgrade failed.");
+                    newer.Restore(dir);Assert(newer.Inspect(dir).Kind==GameStatus.Original,"Old build restore failed.");
+                    newer.Install(dir);
+                    File.Copy(Child(Child(root,"profile-source"),"Solbrand.pck"),Child(dir,"Solbrand.pck"),true);
+                    Assert(newer.Inspect(dir).SteamUpdated,"Latest original lost priority over an old state record.");
+                    newer.Install(dir);newer.Restore(dir);
+                });
+                if (args.Length > 0 && args[0] == "--steam-update") {
+                    Test("actual Steam update: preserve legacy archive, install new build, exact new-build rollback", delegate {
+                        Assert(args.Length==4,"Usage: --steam-update <new-original.pck> <old-backup.pck> <old-state.json>");
+                        var dir=Child(root,"real-steam-update");Directory.CreateDirectory(dir);
+                        var target=Child(dir,"Solbrand.pck");var backup=PatchEngine.BackupFile(dir);
+                        var source=Path.GetFullPath(args[1]);var oldSource=Path.GetFullPath(args[2]);
+                        var before=PatchEngine.HashFile(source);var oldHash=PatchEngine.HashFile(oldSource);
+                        try {
+                            Console.WriteLine("Copying actual new original and legacy backup into isolated test folder...");
+                            File.Copy(source,target);Directory.CreateDirectory(PatchEngine.BackupDirectory(dir));File.Copy(oldSource,backup);
+                            File.Copy(args[3],Child(PatchEngine.BackupDirectory(dir),"state.json"));
+                            File.WriteAllText(Child(dir,"Solbrand.exe"),"TEST FIXTURE: cannot launch game");
+                            File.WriteAllText(Child(dir,"save-sentinel.dat"),"unchanged");
+                            var engine=PatchEngine.Embedded();engine.CheckGameClosed=delegate{};
+                            string last="";engine.Progress=(value,text)=>{if(last!=text){Console.WriteLine(value+"% "+text);last=text;}};
+                            Assert(engine.Inspect(dir).SteamUpdated,"Actual updated game was not recognized.");
+                            engine.Install(dir);Assert(engine.Inspect(dir).Kind==GameStatus.Patched,"Actual updated game not localized.");
+                            Assert(PatchEngine.HashFile(backup)==before,"Actual new original backup changed.");
+                            var archived=Directory.GetFiles(Child(PatchEngine.BackupDirectory(dir),"archive"),"Solbrand.pck.original",SearchOption.AllDirectories);
+                            Assert(archived.Length==1&&PatchEngine.HashFile(archived[0])==oldHash,"Actual old backup was not preserved.");
+                            engine.Restore(dir);Assert(PatchEngine.HashFile(target)==before,"Actual rollback downgraded/changed the new game.");
+                            Assert(File.ReadAllText(Child(dir,"save-sentinel.dat"))=="unchanged","Save sentinel changed.");
+                            Assert(PatchEngine.HashFile(source)==before&&PatchEngine.HashFile(oldSource)==oldHash,"Installed game/source backup changed!");
+                            Console.WriteLine("New original/restored SHA256: "+before);
+                            Console.WriteLine("Legacy original/archive SHA256: "+oldHash);
+                        } finally {
+                            var largeFiles=new List<string>{target,backup};
+                            if(Directory.Exists(Child(PatchEngine.BackupDirectory(dir),"archive")))largeFiles.AddRange(Directory.GetFiles(Child(PatchEngine.BackupDirectory(dir),"archive"),"Solbrand.pck.original",SearchOption.AllDirectories));
+                            foreach(var file in largeFiles){Assert(Path.GetFullPath(file).StartsWith(root+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase),"Unsafe cleanup.");if(File.Exists(file))File.Delete(file);}
+                        }
+                    });
+                }
                 if (args.Length > 0 && args[0] == "--real") {
                     Test("actual game copy: install and exact SHA256 rollback", delegate {
                         var source = args.Length > 1 ? args[1] : Environment.GetEnvironmentVariable("SOLBRAND_ORIGINAL_PCK");

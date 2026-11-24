@@ -21,6 +21,7 @@ namespace SolbrandZh {
     public sealed class StatusInfo {
         public GameStatus Kind;
         public string Title, Detail;
+        public bool SteamUpdated;
     }
     public sealed class PackEntry {
         public string Name;
@@ -97,6 +98,7 @@ namespace SolbrandZh {
         public const string Story = ".godot/imported/Main.ink-e0f455a283e8899f6dee802ddd078da4.res";
         public readonly PatchManifest Manifest;
         readonly byte[] overlay;
+        internal readonly List<PatchEngine> CompatibleBuilds = new List<PatchEngine>();
         readonly JavaScriptSerializer json = new JavaScriptSerializer();
         public Action<int, string> Progress = delegate { };
         internal Action CheckGameClosed = EnsureGameClosed;
@@ -110,13 +112,34 @@ namespace SolbrandZh {
         }
         public static PatchEngine Embedded() {
             var a = Assembly.GetExecutingAssembly();
-            using (var s = a.GetManifestResourceStream("patch.manifest"))
+            var engine = EmbeddedProfile(a, "patch");
+            foreach (var name in a.GetManifestResourceNames().Where(n => n.StartsWith("build.") && n.EndsWith(".manifest"))) {
+                var other = EmbeddedProfile(a, name.Substring(0, name.Length - ".manifest".Length));
+                if (other.Manifest.steamBuild != engine.Manifest.steamBuild) engine.CompatibleBuilds.Add(other);
+            }
+            return engine;
+        }
+        static PatchEngine EmbeddedProfile(Assembly a, string prefix) {
+            using (var s = a.GetManifestResourceStream(prefix + ".manifest"))
             using (var r = new StreamReader(s, Encoding.UTF8))
-            using (var o = a.GetManifestResourceStream("patch.overlay"))
+            using (var o = a.GetManifestResourceStream(prefix + ".overlay"))
             using (var b = new MemoryStream()) {
                 o.CopyTo(b);
                 return new PatchEngine(new JavaScriptSerializer().Deserialize<PatchManifest>(r.ReadToEnd()), b.ToArray());
             }
+        }
+        PatchEngine ForDirectory(string dir) {
+            if (String.IsNullOrWhiteSpace(dir) || !File.Exists(GameFile(dir))) return this;
+            try {
+                var all = new[] { this }.Concat(CompatibleBuilds).ToArray();
+                var length = new FileInfo(GameFile(dir)).Length;
+                var original = all.FirstOrDefault(e => e.Manifest.sourcePackSize == length);
+                if (original != null) return original;
+                var state = ReadState(dir);
+                if (state != null && length == state.patchedSize)
+                    return all.FirstOrDefault(e => e.Manifest.sourcePackSize == state.originalSize) ?? this;
+            } catch (Exception) { /* Inspect reports damaged records without modifying anything. */ }
+            return this;
         }
         static string GameFile(string dir) { return Path.Combine(Path.GetFullPath(dir), "Solbrand.pck"); }
         public static string BackupDirectory(string dir) { return Path.Combine(Path.GetFullPath(dir), ".solbrand-zh"); }
@@ -150,12 +173,14 @@ namespace SolbrandZh {
             RejectLink(file);
             var state = json.Deserialize<PatchState>(File.ReadAllText(file, Encoding.UTF8));
             if (state == null || state.product != "SolbrandZh" || !IsHash(state.originalHash) || !IsHash(state.patchedHash)
-                || state.originalSize != Manifest.sourcePackSize || state.patchedSize < state.originalSize)
+                || state.originalSize < 40 || state.patchedSize < state.originalSize)
                 throw new InvalidDataException("汉化记录损坏。原版备份已保留，请勿删除 .solbrand-zh 文件夹。");
             return state;
         }
         static bool IsHash(string s) { return s != null && s.Length == 64 && s.All(x => Uri.IsHexDigit(x)); }
         public StatusInfo Inspect(string dir) {
+            var selected = ForDirectory(dir);
+            if (selected != this) return selected.Inspect(dir);
             if (String.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir)
                 || !File.Exists(GameFile(dir)) || !File.Exists(Path.Combine(dir, "Solbrand.exe")))
                 return new StatusInfo { Kind = GameStatus.Missing, Title = "请选择游戏文件夹", Detail = "选择包含 Solbrand.exe 的 Solbrand Demo 安装文件夹。" };
@@ -164,6 +189,16 @@ namespace SolbrandZh {
                 var state = ReadState(dir);
                 using (var s = OpenRead(GameFile(dir))) {
                     if (state != null && s.Length == state.patchedSize && File.Exists(BackupFile(dir))) {
+                        if (state.version != Manifest.version) {
+                            Version installed, available;
+                            if (!Version.TryParse(state.version, out installed) || !Version.TryParse(Manifest.version, out available) || installed >= available)
+                                throw new InvalidDataException("汉化版本与此工具不兼容，请使用更新的工具。");
+                            if (HashFile(GameFile(dir)) != state.patchedHash)
+                                throw new InvalidDataException("当前游戏与汉化记录不一致，暂未更改文件。");
+                            using (var original = OpenRead(BackupFile(dir))) CheckOriginal(original);
+                            return new StatusInfo { Kind = GameStatus.UpdateAvailable, Title = "发现旧版汉化 · " + state.version,
+                                Detail = "点击“更新至 " + Manifest.version + "”安装新补丁。原版备份和汉化存档会保留。" };
+                        }
                         var current = Pack.Read(s);
                         using (var o = new MemoryStream(overlay, false)) {
                             var expected = Pack.Read(o);
@@ -172,15 +207,6 @@ namespace SolbrandZh {
                             if (!project.SequenceEqual(Pack.Bytes(o, expected.Find("project.binary")))
                                 || !story.SequenceEqual(Pack.Bytes(o, expected.Find(Story))))
                                 throw new InvalidDataException("当前游戏与汉化记录不一致。备份仍在，暂未更改文件。");
-                            if (state.version != Manifest.version) {
-                                Version installed, available;
-                                if (!Version.TryParse(state.version, out installed) || !Version.TryParse(Manifest.version, out available)
-                                    || installed >= available)
-                                    throw new InvalidDataException("汉化版本与此工具不兼容，请使用更新的工具。");
-                                return new StatusInfo { Kind = GameStatus.UpdateAvailable,
-                                    Title = "发现旧版汉化 · " + state.version,
-                                    Detail = "点击“更新至 " + Manifest.version + "”安装新补丁。工具会保留原版备份和现有汉化存档。" };
-                            }
                             foreach (var entry in expected.Entries)
                                 if (!Pack.Bytes(s, current.Find(entry.Name)).SequenceEqual(Pack.Bytes(o, entry)))
                                     throw new InvalidDataException("汉化资源与记录不一致，请先回退原版再重新汉化。");
@@ -190,9 +216,17 @@ namespace SolbrandZh {
                     }
                     CheckOriginal(s);
                 }
-                if (File.Exists(BackupFile(dir)))
+                if (File.Exists(BackupFile(dir))) {
+                    if (state != null) {
+                        bool matches = false;
+                        try { using (var old = OpenRead(BackupFile(dir))) { CheckOriginal(old); matches = true; } } catch (InvalidDataException) { }
+                        if (!matches) return new StatusInfo { Kind = GameStatus.UpdateAvailable, SteamUpdated = true,
+                            Title = "Steam 已更新 · 需要重新汉化",
+                            Detail = "已识别 Build " + Manifest.steamBuild + "。点击更新：归档旧版备份后汉化新版，回退将恢复新版原版。存档保留。" };
+                    }
                     return new StatusInfo { Kind = GameStatus.Recovery, Title = "当前是原版 · 发现旧备份",
                         Detail = "点击“回退原版”校验并清理旧记录，然后即可重新汉化。" };
+                }
                 return new StatusInfo { Kind = GameStatus.Original, Title = "当前是原版 · 可以汉化",
                     Detail = "点击“一键汉化”会自动备份。汉化版使用独立存档，原版进度会保留。" };
             } catch (Exception e) {
@@ -229,8 +263,15 @@ namespace SolbrandZh {
               catch (UnauthorizedAccessException) { /* Same recovery path. */ }
         }
         public void Install(string dir) {
+            var selected = ForDirectory(dir);
+            if (selected != this) { selected.Progress = Progress; selected.CheckGameClosed = CheckGameClosed; selected.Install(dir); return; }
             CheckGameClosed();
             var info = Inspect(dir);
+            if (info.SteamUpdated) {
+                using (var operation = AcquireLock(dir)) ArchiveUpdatedBackup(dir);
+                Install(dir);
+                return;
+            }
             if (info.Kind == GameStatus.UpdateAvailable) {
                 // Each step is atomic. Restoring first frees the old patched copy's space,
                 // so updating needs no extra full-size copy beyond the existing backup.
@@ -309,6 +350,8 @@ namespace SolbrandZh {
             }
         }
         public void Restore(string dir) {
+            var selected = ForDirectory(dir);
+            if (selected != this) { selected.Progress = Progress; selected.CheckGameClosed = CheckGameClosed; selected.Restore(dir); return; }
             CheckGameClosed();
             if (String.IsNullOrWhiteSpace(dir) || !File.Exists(GameFile(dir))) throw new IOException("请先选择正确的游戏文件夹。");
             using (var operation = AcquireLock(dir)) {
@@ -320,7 +363,14 @@ namespace SolbrandZh {
                 }
                 if (state == null) throw new IOException("发现备份但缺少汉化记录，已保留所有文件。请勿手动删除备份。");
                 Progress(10, "正在校验原版备份…");
-                using (var b = OpenRead(backup)) CheckOriginal(b);
+                bool isUpdatedOriginal = false;
+                try { using (var current = OpenRead(target)) CheckOriginal(current); isUpdatedOriginal = new FileInfo(backup).Length != Manifest.sourcePackSize; }
+                catch (InvalidDataException) { }
+                if (isUpdatedOriginal) { ArchiveUpdatedBackup(dir); Progress(100, "当前已是新版原版，旧版备份已归档，未覆盖新版游戏。"); return; }
+                using (var b = OpenRead(backup)) {
+                    if (b.Length != state.originalSize) throw new InvalidDataException("备份长度与记录不符，未修改文件。");
+                    Pack.Read(b);
+                }
                 if (HashFile(backup) != state.originalHash) throw new IOException("原版备份校验失败，已停止回退。当前游戏与备份均未更改。");
                 Progress(48, "正在检查游戏文件…");
                 var currentHash = HashFile(target);
@@ -336,6 +386,26 @@ namespace SolbrandZh {
                 }
                 Progress(100, "已回退原版！存档未改动，可以照常从 Steam 启动。");
             }
+        }
+        void ArchiveUpdatedBackup(string dir) {
+            CheckGameClosed();
+            using (var current = OpenRead(GameFile(dir))) CheckOriginal(current);
+            var state = ReadState(dir); var backup = BackupFile(dir);
+            if (state == null || !File.Exists(backup) || new FileInfo(backup).Length != state.originalSize || HashFile(backup) != state.originalHash)
+                throw new IOException("旧版备份无法通过记录校验，已保留文件。请勿删除 .solbrand-zh。");
+            Progress(1, "Steam 已更新：正在完整保留旧版备份…");
+            var archiveRoot = Path.Combine(BackupDirectory(dir), "archive"); RejectLink(archiveRoot);
+            var archive = Path.Combine(archiveRoot, DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(archive);
+            foreach (var name in new[] { "state.json", "pending.json" }) {
+                var source = Path.Combine(BackupDirectory(dir), name); RejectLink(source);
+                if (File.Exists(source)) File.Copy(source, Path.Combine(archive, name));
+            }
+            CheckGameClosed();
+            using (var current = OpenRead(GameFile(dir))) CheckOriginal(current);
+            File.Move(backup, Path.Combine(archive, "Solbrand.pck.original"));
+            // Preserve any journal on interruption; a validated original can be reinstalled.
+            foreach (var file in new[] { StateFile(dir), PendingFile(dir) }) if (File.Exists(file)) File.Delete(file);
         }
         public static string HashFile(string file) {
             using (var s = OpenRead(file)) using (var h = SHA256.Create()) return Hex(h.ComputeHash(s));

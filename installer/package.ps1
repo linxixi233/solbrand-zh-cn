@@ -6,7 +6,7 @@ $guide = Join-Path $taskRoot '美化版-使用方法.txt'
 Copy-Item -LiteralPath $application -Destination $portable -Force
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 Add-Type -AssemblyName System.IO.Compression
-$destination = Join-Path $taskRoot 'dist\Solbrand汉化助手-1.3-美化版.zip'
+$destination = Join-Path $taskRoot 'dist\Solbrand汉化助手-1.4-美化版.zip'
 $zipStream = [IO.File]::Open($destination, [IO.FileMode]::Create, [IO.FileAccess]::ReadWrite)
 try {
     $archive = [IO.Compression.ZipArchive]::new($zipStream,[IO.Compression.ZipArchiveMode]::Create,$true)

@@ -62,7 +62,10 @@ fs.mkdirSync('dist',{recursive:true});
 const pack=readPack(sourcePackPath);
 const project=pack.read('project.binary');
 const expectedStory='.godot/imported/Main.ink-e0f455a283e8899f6dee802ddd078da4.res';
-if(!pack.entries.has(expectedStory)||pack.entries.get(expectedStory).digest.toString('hex')!=='e9c988ef5edc0ef9b6467ceec20ee844'||md5(project).toString('hex')!=='93871162ba01a3515e9e4d92aff45166')throw Error('This game build differs from the supported build 26815196.');
+const profiles=JSON.parse(fs.readFileSync('translations/builds.json','utf8'));
+const supported=Object.entries(profiles).find(([id,p])=>p.sourcePackSize===fs.statSync(sourcePackPath).size&&p.sourceProjectMd5===md5(project).toString('hex')&&pack.entries.get(expectedStory)?.digest.toString('hex')===p.sourceStoryMd5);
+if(!supported)throw Error('Unrecognized original game build. Supported builds: '+Object.keys(profiles).join(', ')+'. Refusing to use translations with unverified story indices.');
+const [steamBuild,profile]=supported;
 const raw=decompress(pack.read(expectedStory));
 const at=raw.indexOf(Buffer.from('{"inkVersion"')),oldLength=raw.readUInt32LE(at-4);
 if(at<4||raw.subarray(at+oldLength).toString()!=='RSRC')throw Error('Unexpected Ink resource layout');
@@ -84,7 +87,7 @@ for(const [source,target]of Object.entries(dictionary)){
 const tutorial=[];
 function collect(v){if(typeof v==='string'&&v.startsWith('^')){const t=v.slice(1);if(!tutorial.includes(t))tutorial.push(t);}else if(Array.isArray(v))v.forEach(collect);else if(v&&typeof v==='object')Object.values(v).forEach(collect);}
 collect(story.root.at(-1).Tutorial);
-const translated=JSON.parse(fs.readFileSync('translations/tutorial.zh.json','utf8'));
+const translated=JSON.parse(fs.readFileSync(path.join(profile.storyTranslations,'tutorial.zh.json'),'utf8'));
 const tutorialMap=new Map(Object.entries(translated).map(([i,t])=>{if(!tutorial[Number(i)])throw Error('Invalid tutorial index '+i);return [tutorial[Number(i)],t];}));
 let translatedTokens=0;
 function replace(v){if(typeof v==='string'&&tutorialMap.has(v.slice(1))&&v.startsWith('^')){translatedTokens++;return '^'+tutorialMap.get(v.slice(1));}if(Array.isArray(v))return v.map(replace);if(v&&typeof v==='object')return Object.fromEntries(Object.entries(v).map(([k,x])=>[k,replace(x)]));return v;}
@@ -99,7 +102,7 @@ function verifyStructure(a,b) {
 verifyStructure(originalTutorial,story.root.at(-1).Tutorial);
 const storyRoot=story.root.at(-1);
 const extraCoverage=[];
-const storyDirectory='translations/story';
+const storyDirectory=path.join(profile.storyTranslations,'story');
 const allStoryTranslations={};
 if(fs.existsSync(storyDirectory))for(const file of fs.readdirSync(storyDirectory).filter(n=>n.endsWith('.json')).sort()){
   for(const [knot,entries] of Object.entries(JSON.parse(fs.readFileSync(path.join(storyDirectory,file),'utf8'))))allStoryTranslations[knot]={...allStoryTranslations[knot],...entries};
@@ -166,7 +169,7 @@ overlay('dist/solbrand-zh-overlay.pck',replacements);
 const rebuilt=readPack('dist/solbrand-zh-overlay.pck');
 for(const [name,expected]of replacements)if(!rebuilt.read(name).equals(expected))throw Error('Overlay verification failed: '+name);
 fs.closeSync(rebuilt.fd);
-const manifest={version:'0.3.0',steamBuild:'26815196',sourcePackSize:fs.statSync(sourcePackPath).size,
+const manifest={version:'0.4.0',steamBuild,sourcePackSize:fs.statSync(sourcePackPath).size,
  sourceProjectMd5:md5(project).toString('hex'),sourceStoryMd5:pack.entries.get(expectedStory).digest.toString('hex'),
  uiSourceEntries:Object.keys(JSON.parse(fs.readFileSync('translations/ui.zh.json'))).length,manualSourceEntries:Object.keys(manualDictionary).length,proseSourceEntries:Object.keys(proseDictionary).length,uiMessages:Object.keys(dictionary).length,
  tutorialUniqueTranslations:tutorialMap.size,tutorialReplacedTokens:translatedTokens,tutorialSourceUnique: tutorial.length,

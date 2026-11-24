@@ -6,24 +6,26 @@
 
 | 项目 | 当前版本 |
 | --- | --- |
-| 中文补丁 | 0.3.0 |
-| Windows 汉化助手 | 1.3.0 |
-| 支持的 Steam Demo Build | 26815196 |
+| 中文补丁 | 0.4.0 |
+| Windows 汉化助手 | 1.4.0 |
+| 支持的 Steam Demo Build | 26869508、26815196 |
 
 ![汉化助手界面示例](docs/screenshots/assistant.png)
 
 ## 下载安装
 
-前往本仓库的 **Releases** 页面，下载 `Solbrand-ZH-Assistant-v1.3.0.exe`，或下载同版本的 Windows ZIP 包。普通玩家无需编译源码。
+前往本仓库的 **Releases** 页面，下载 `Solbrand-ZH-Assistant-v1.4.0.exe`，或下载同版本的 Windows ZIP 包。普通玩家无需编译源码。
 
 1. 在 Steam 安装匹配版本的 Solbrand Demo，退出游戏。
 2. 双击汉化助手，确认自动识别的游戏位置；也可点击“选择文件夹”。
-3. 点击“一键安装汉化”或“更新至 0.3.0”，等待完成。
+3. 点击“一键安装汉化”或“更新至 0.4.0”，等待完成。
 4. 点击“在 Steam 中启动游戏”。恢复时，退出游戏后点击“回退原版”。
 
 助手会在游戏目录的 `.solbrand-zh` 中保存原版备份；在回退之前，请保留该目录。游戏运行时，安装、更新和回退操作会暂时禁用。游戏更新后若校验不匹配，工具会拒绝修改文件。
 
 原版存档保留；汉化版使用独立的 `Solbrand Demo ZH` 用户目录。更新和回退不会迁移或删除这两套存档。
+
+**Steam 更新后旧汉化失效：** 等待 Steam 更新完成，退出游戏，直接运行新助手。看到“Steam 已更新 · 需要重新汉化”时点击更新即可，不要先用旧助手回退，也不要删除备份目录。新助手会将旧版备份与记录完整保留在 `.solbrand-zh/archive/`，再备份新版原版；之后回退恢复新版，不会降级游戏。
 
 ## 汉化内容与当前限制
 
@@ -39,7 +41,7 @@
 ```text
 installer/       C# / WinForms 助手、补丁引擎及测试
 patch/           Godot 运行时翻译与字体适配
-translations/    中文词典、剧情译文、名称与译注
+translations/    中文词典、各 Build 的剧情译文、名称与译注
 tools/           PCK 处理、补丁构建、资源分析及验证工具
 docs/            界面预览及发布说明
 ```
@@ -53,19 +55,21 @@ docs/            界面预览及发布说明
 在仓库根目录执行，路径替换为自己的原版游戏位置：
 
 ```powershell
-node tools/build.mjs "D:\SteamLibrary\steamapps\common\Solbrand Demo"
+node tools/build-supported.mjs "D:\SteamLibrary\steamapps\common\Solbrand Demo"
 pwsh -NoProfile -File installer/build.ps1
 & ./dist/SolbrandZh.Tests.exe
 pwsh -NoProfile -File installer/package.ps1
 ```
 
-若游戏已经汉化，构建的输入应使用助手保存的原版备份，而不是当前已修改的资源包：
+`build-supported.mjs` 会识别游戏目录及其中的原版备份，按资源指纹构建可用 Build，并将独立覆盖数据内置到同一助手。单独构建某个原版资源也可用 `build.mjs`；若当前资源已汉化，应传入对应的原版备份：
 
 ```powershell
 node tools/build.mjs "D:\SteamLibrary\steamapps\common\Solbrand Demo\.solbrand-zh\Solbrand.pck.original"
 ```
 
 生成的助手位于 `dist/`。图标源文件生成器为 `tools/create_installer_icon.py`，可选使用 Python 与 Pillow 重新生成；日常构建直接使用已提交的 `installer/solbrand.ico`。
+
+支持指纹在 `translations/builds.json`。Build 26869508 的重新对齐译文在 `translations/builds/26869508/`；旧版译文索引保留。未知 Build 会拒绝构建，不会直接套用旧版数字索引。
 
 ## 验证
 

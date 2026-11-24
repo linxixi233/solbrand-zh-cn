@@ -78,9 +78,11 @@ function Find-OriginalPack {
     foreach ($choice in $choices) {
         if (!$choice) { continue }
         if (Test-Path -LiteralPath $choice -PathType Leaf) { return [IO.Path]::GetFullPath($choice) }
-        foreach ($relative in @('.solbrand-zh\Solbrand.pck.original','Solbrand.pck')) {
+        $buildProfiles = [IO.File]::ReadAllText((Join-Path $taskRoot 'translations\builds.json')) | ConvertFrom-Json
+        $sizes = @($buildProfiles.PSObject.Properties | ForEach-Object { [long]$_.Value.sourcePackSize })
+        foreach ($relative in @('Solbrand.pck','.solbrand-zh\Solbrand.pck.original')) {
             $candidate = Join-Path $choice $relative
-            if (Test-Path -LiteralPath $candidate -PathType Leaf) {
+            if ((Test-Path -LiteralPath $candidate -PathType Leaf) -and $sizes -contains (Get-Item -LiteralPath $candidate).Length) {
                 $settings.gameDirectory = [IO.Path]::GetFullPath($choice)
                 return [IO.Path]::GetFullPath($candidate)
             }
@@ -290,14 +292,14 @@ try {
     if (!$SkipRelease) {
         Write-Host '[2/6] 构建汉化助手与发布包…' -ForegroundColor Cyan
         $app = Join-Path $taskRoot 'dist\Solbrand汉化助手-美化版.exe'
-        $zipPackage = Join-Path $taskRoot 'dist\Solbrand汉化助手-1.3-美化版.zip'
+        $zipPackage = Join-Path $taskRoot 'dist\Solbrand汉化助手-1.4-美化版.zip'
         $reuseBuild = !$ForceRelease -and $settings.ContainsKey('lastBuildSourceHash') -and $settings.lastBuildSourceHash -eq $sourceHash -and (Test-Path -LiteralPath $app) -and (Test-Path -LiteralPath $zipPackage)
         if ($reuseBuild) {
             $reuseBuild = (Get-FileHash -LiteralPath $app -Algorithm SHA256).Hash -eq $settings.lastBuildExeHash -and (Get-FileHash -LiteralPath $zipPackage -Algorithm SHA256).Hash -eq $settings.lastBuildZipHash
         }
         if (!$reuseBuild) {
             $node = Find-Node; $originalPack = Find-OriginalPack
-            $buildOutput = @(& $node tools/build.mjs $originalPack)
+            $buildOutput = @(& $node tools/build-supported.mjs $originalPack)
             if ($LASTEXITCODE -ne 0) { $buildOutput | ForEach-Object { Write-Host $_ }; throw '补丁构建失败；未上传旧的安装包。' }
             $buildManifest = [IO.File]::ReadAllText((Join-Path $taskRoot 'dist\manifest.json'),[Text.Encoding]::UTF8) | ConvertFrom-Json
             Write-Host ('补丁构建完成：v' + $buildManifest.version + '，场景 ' + $buildManifest.localizedScenes + '，匹配词条 ' + $buildManifest.uiMessages + '。')

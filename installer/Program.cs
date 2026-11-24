@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -69,7 +69,7 @@ namespace SolbrandZh {
         bool gameRunning;
         public MainForm(PatchEngine patch, string initialFolder) {
             engine = patch;
-            Text = "Solbrand 汉化助手 1.3 · 非商业学习版";
+            Text = "Solbrand 汉化助手 1.4 · 非商业学习版";
             Font = new Font("Microsoft YaHei UI", 9.5F);
             BackColor = Palette.Paper; ForeColor = ink;
             AutoScaleDimensions = new SizeF(96, 96); AutoScaleMode = AutoScaleMode.Dpi;
@@ -159,7 +159,7 @@ namespace SolbrandZh {
             var footer = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, Margin = new Padding(0), Padding = new Padding(0, 10, 0, 0) };
             footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); footer.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220));
             footer.Controls.Add(new Label { Text = "非官方汉化 · 非商业性，仅供学习用途", Dock = DockStyle.Fill, ForeColor = muted, TextAlign = ContentAlignment.MiddleLeft, Font = new Font(Font.FontFamily, 9F), Margin = new Padding(0) }, 0, 0);
-            footer.Controls.Add(new Label { Text = "助手 1.3  /  补丁 " + engine.Manifest.version, Dock = DockStyle.Fill, ForeColor = muted, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Font.FontFamily, 8.5F), Margin = new Padding(0) }, 1, 0);
+            footer.Controls.Add(new Label { Text = "助手 1.4  /  补丁 " + engine.Manifest.version, Dock = DockStyle.Fill, ForeColor = muted, TextAlign = ContentAlignment.MiddleRight, Font = new Font(Font.FontFamily, 8.5F), Margin = new Padding(0) }, 1, 0);
             body.Controls.Add(footer, 0, 7);
 
             var nextActions = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, Margin = new Padding(0) };
@@ -226,6 +226,7 @@ namespace SolbrandZh {
                 progress.Value = result.Kind == GameStatus.Patched ? 100 : 0;
                 step.Text = gameRunning ? "请先退出游戏，操作按钮会自动恢复。" : !String.IsNullOrEmpty(lastError) ? "操作未完成，请查看上方提示和操作记录。"
                     : result.Kind == GameStatus.Patched ? "汉化已就绪，可以从 Steam 启动游戏。"
+                    : result.SteamUpdated ? "准备就绪 · 旧版备份将归档，新版原版将单独备份。"
                     : result.Kind == GameStatus.UpdateAvailable ? "准备就绪 · 更新会沿用现有的原版备份。"
                     : result.Kind == GameStatus.Original ? "准备就绪 · 安装前将自动备份原版。" : "请根据上方提示检查游戏目录及版本。";
             }
@@ -238,7 +239,7 @@ namespace SolbrandZh {
             install.Enabled = available && (status.Kind == GameStatus.Original || status.Kind == GameStatus.UpdateAvailable);
             bool backup = false;
             try { backup = File.Exists(PatchEngine.BackupFile(SelectedFolder())); } catch (Exception) { }
-            restore.Enabled = available && backup;
+            restore.Enabled = available && backup && !status.SteamUpdated;
             browse.Enabled = !busy; folder.Enabled = !busy;
             launch.Enabled = available && (status.Kind == GameStatus.Patched || status.Kind == GameStatus.Original);
             launch.Text = status != null && status.Kind == GameStatus.UpdateAvailable ? "更新完成后可启动游戏" : "在 Steam 中启动游戏";

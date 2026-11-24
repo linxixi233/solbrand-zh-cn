@@ -1,0 +1,854 @@
+{
+  "exact": 9494,
+  "punctuation": [
+    {
+      "knot": "Tutorial",
+      "oldIndex": 243,
+      "newIndex": 243,
+      "old": "Let the feeling pass.",
+      "current": "Let the feeling pass. ",
+      "zh": "任由感觉消散。"
+    },
+    {
+      "knot": "Tutorial",
+      "oldIndex": 585,
+      "newIndex": 586,
+      "old": "Hang up",
+      "current": "Hang up. ",
+      "zh": "挂断"
+    },
+    {
+      "knot": "Tutorial",
+      "oldIndex": 587,
+      "newIndex": 589,
+      "old": "Hang up, and make sure it's quicker than him",
+      "current": "Hang up, and make sure it's quicker than him. ",
+      "zh": "挂断，而且一定要比他快"
+    },
+    {
+      "knot": "Tutorial",
+      "oldIndex": 599,
+      "newIndex": 601,
+      "old": "Say nothing, because that would be weird.",
+      "current": "Say nothing, because that would be weird. ",
+      "zh": "什么也不说，自言自语太奇怪了。"
+    },
+    {
+      "knot": "Captain",
+      "oldIndex": 74,
+      "newIndex": 74,
+      "old": "Don't press the point",
+      "current": "Don't press the point... ",
+      "zh": "不再追问"
+    },
+    {
+      "knot": "Captain",
+      "oldIndex": 91,
+      "newIndex": 92,
+      "old": "Pry open your inner eye ",
+      "current": "Pry open your inner eye. ",
+      "zh": "睁开内在之眼 "
+    },
+    {
+      "knot": "Captain",
+      "oldIndex": 94,
+      "newIndex": 95,
+      "old": "Focus on the feeling ",
+      "current": "Focus on the feeling. ",
+      "zh": "专注于那种感觉 "
+    },
+    {
+      "knot": "Captain",
+      "oldIndex": 96,
+      "newIndex": 97,
+      "old": "Listen in ",
+      "current": "Listen in. ",
+      "zh": "侧耳聆听 "
+    },
+    {
+      "knot": "Captain",
+      "oldIndex": 98,
+      "newIndex": 99,
+      "old": "Ignore it. Push it away.",
+      "current": "Ignore it. Push it away. ",
+      "zh": "无视它，把它推开。"
+    },
+    {
+      "knot": "UnlockTrawling",
+      "oldIndex": 21,
+      "newIndex": 21,
+      "old": "Follow suit",
+      "current": "Follow suit. ",
+      "zh": "照着做"
+    },
+    {
+      "knot": "ByggaManual",
+      "oldIndex": 79,
+      "newIndex": 79,
+      "old": "Stand your ground. This could be critical information.",
+      "current": "Stand your ground. This could be critical information. ",
+      "zh": "坚持立场。这可能是关键信息。"
+    },
+    {
+      "knot": "ByggaManual",
+      "oldIndex": 106,
+      "newIndex": 107,
+      "old": "Quietly exit the call",
+      "current": "Quietly exit the call. ",
+      "zh": "悄悄退出通话"
+    },
+    {
+      "knot": "Worder",
+      "oldIndex": 15,
+      "newIndex": 15,
+      "old": "Close the connection",
+      "current": "Close the connection. ",
+      "zh": "关闭连接"
+    },
+    {
+      "knot": "Worder",
+      "oldIndex": 113,
+      "newIndex": 116,
+      "old": "You can't hear them.",
+      "current": "You can't hear them. ",
+      "zh": "你听不见。"
+    },
+    {
+      "knot": "NewSignal",
+      "oldIndex": 93,
+      "newIndex": 93,
+      "old": "Open Arkiv. (Again.)",
+      "current": "Open Arkiv. (Again.) ",
+      "zh": "打开档案。（再来一次。）"
+    },
+    {
+      "knot": "Urd",
+      "oldIndex": 17,
+      "newIndex": 17,
+      "old": " transmission",
+      "current": " transmission. ",
+      "zh": "传输"
+    },
+    {
+      "knot": "Tether",
+      "oldIndex": 3,
+      "newIndex": 2,
+      "old": "Hail the Bridge.",
+      "current": "Hail the Bridge. ",
+      "zh": "呼叫舰桥。"
+    },
+    {
+      "knot": "Tether",
+      "oldIndex": 4,
+      "newIndex": 6,
+      "old": "Close the connection.",
+      "current": "Close the connection. ",
+      "zh": "关闭连接。"
+    },
+    {
+      "knot": "DeathByCold",
+      "oldIndex": 39,
+      "newIndex": 39,
+      "old": "I'll ",
+      "current": " I'll ",
+      "zh": "我会"
+    },
+    {
+      "knot": "Tugboat",
+      "oldIndex": 9,
+      "newIndex": 9,
+      "old": "Give them a call.",
+      "current": "Give them a call. ",
+      "zh": "呼叫他们。"
+    },
+    {
+      "knot": "Airhead",
+      "oldIndex": 11,
+      "newIndex": 11,
+      "old": "Look for the secret crumbs.",
+      "current": "Look for the secret crumbs. ",
+      "zh": "寻找秘密碎屑。"
+    },
+    {
+      "knot": "Airhead",
+      "oldIndex": 14,
+      "newIndex": 16,
+      "old": "Back away",
+      "current": "Back away. ",
+      "zh": "退开"
+    },
+    {
+      "knot": "Airhead",
+      "oldIndex": 223,
+      "newIndex": 225,
+      "old": "Try to look inside her skull...",
+      "current": "Try to look inside her skull... ",
+      "zh": "试着查看她的头骨内部……"
+    },
+    {
+      "knot": "Airhead",
+      "oldIndex": 275,
+      "newIndex": 275,
+      "old": "Don't quibble with her...",
+      "current": "Don't quibble with her... ",
+      "zh": "别跟她抬杠……"
+    },
+    {
+      "knot": "Airhead",
+      "oldIndex": 324,
+      "newIndex": 325,
+      "old": "Leave it",
+      "current": "Leave it. ",
+      "zh": "算了"
+    },
+    {
+      "knot": "CutterAndCrank",
+      "oldIndex": 6,
+      "newIndex": 6,
+      "old": "Leave them at it.",
+      "current": "Leave them at it. ",
+      "zh": "让他们继续。"
+    },
+    {
+      "knot": "CutterAndCrank",
+      "oldIndex": 22,
+      "newIndex": 24,
+      "old": "Back away",
+      "current": "Back away. ",
+      "zh": "退开"
+    },
+    {
+      "knot": "CutterAndCrank",
+      "oldIndex": 55,
+      "newIndex": 56,
+      "old": "Stay quiet...",
+      "current": "Stay quiet... ",
+      "zh": "保持安静……"
+    },
+    {
+      "knot": "InvertedRider",
+      "oldIndex": 9,
+      "newIndex": 8,
+      "old": "Back away",
+      "current": "Back away. ",
+      "zh": "退开"
+    },
+    {
+      "knot": "InvertedRider",
+      "oldIndex": 82,
+      "newIndex": 82,
+      "old": "Take out his saddle",
+      "current": "Take out his saddle. ",
+      "zh": "拿出他的鞍座"
+    },
+    {
+      "knot": "InvertedRider",
+      "oldIndex": 99,
+      "newIndex": 100,
+      "old": "Let him have it.",
+      "current": "Let him have it ",
+      "zh": "交给他。"
+    },
+    {
+      "knot": "InvertedRider",
+      "oldIndex": 215,
+      "newIndex": 217,
+      "old": "Have pity",
+      "current": "Have pity. ",
+      "zh": "发发慈悲"
+    },
+    {
+      "knot": "InvertedRider",
+      "oldIndex": 270,
+      "newIndex": 275,
+      "old": "Leave the rider",
+      "current": "Leave the rider. ",
+      "zh": "离开骑手"
+    },
+    {
+      "knot": "MuckPool",
+      "oldIndex": 64,
+      "newIndex": 64,
+      "old": " from its hold.",
+      "current": " from its hold. ",
+      "zh": "它的束缚。"
+    },
+    {
+      "knot": "Soderqvist",
+      "oldIndex": 11,
+      "newIndex": 11,
+      "old": "Inspect the frame",
+      "current": "Inspect the frame. ",
+      "zh": "检查支架"
+    },
+    {
+      "knot": "Soderqvist",
+      "oldIndex": 12,
+      "newIndex": 13,
+      "old": "Look at the chain",
+      "current": "Look at the chain. ",
+      "zh": "查看链条"
+    },
+    {
+      "knot": "Soderqvist",
+      "oldIndex": 13,
+      "newIndex": 14,
+      "old": "Examine the seating",
+      "current": "Examine the seating. ",
+      "zh": "检查座垫"
+    },
+    {
+      "knot": "Soderqvist",
+      "oldIndex": 14,
+      "newIndex": 15,
+      "old": "Back away",
+      "current": "Back away. ",
+      "zh": "退开"
+    },
+    {
+      "knot": "Soderqvist",
+      "oldIndex": 43,
+      "newIndex": 45,
+      "old": "Ignore her and focus on Söderqvist",
+      "current": "Ignore her and focus on Söderqvist. ",
+      "zh": "无视她，专注瑟德奎斯特"
+    },
+    {
+      "knot": "Soderqvist",
+      "oldIndex": 50,
+      "newIndex": 53,
+      "old": "Get Polhem on the call",
+      "current": "Get Polhem on the call. ",
+      "zh": "让波尔海姆加入通话"
+    },
+    {
+      "knot": "Soderqvist",
+      "oldIndex": 103,
+      "newIndex": 106,
+      "old": "Let Söderqvist do the talking",
+      "current": "Let Söderqvist do the talking ",
+      "zh": "让瑟德奎斯特开口"
+    },
+    {
+      "knot": "Soderqvist",
+      "oldIndex": 197,
+      "newIndex": 200,
+      "old": "Suppress the voice",
+      "current": "Suppress the voice. ",
+      "zh": "压住那个声音"
+    },
+    {
+      "knot": "TheDebate",
+      "oldIndex": 151,
+      "newIndex": 151,
+      "old": "Nod in a perfectly non-commital fashion.",
+      "current": "Nod in a perfectly non-commital fashion. ",
+      "zh": "点头，完美地不表任何立场。"
+    },
+    {
+      "knot": "TheDebate",
+      "oldIndex": 202,
+      "newIndex": 203,
+      "old": "Don't ask.",
+      "current": "Don't ask. ",
+      "zh": "别问。"
+    },
+    {
+      "knot": "TheDebate_Dead",
+      "oldIndex": 2,
+      "newIndex": 1,
+      "old": "Leave.",
+      "current": "Leave. ",
+      "zh": "离开。"
+    },
+    {
+      "knot": "LittleFinger",
+      "oldIndex": 3,
+      "newIndex": 2,
+      "old": "Leave",
+      "current": "Leave. ",
+      "zh": "离开"
+    },
+    {
+      "knot": "LittleFinger",
+      "oldIndex": 37,
+      "newIndex": 38,
+      "old": "Ignore it",
+      "current": "Ignore it ",
+      "zh": "无视它"
+    },
+    {
+      "knot": "LittleFinger",
+      "oldIndex": 39,
+      "newIndex": 41,
+      "old": "Retreat, and quick!",
+      "current": "Retreat, and quick! ",
+      "zh": "快撤！"
+    },
+    {
+      "knot": "LittleFinger",
+      "oldIndex": 46,
+      "newIndex": 48,
+      "old": "Grab hold of the hand",
+      "current": "Grab hold of the hand. ",
+      "zh": "抓住那只手"
+    },
+    {
+      "knot": "LittleFinger",
+      "oldIndex": 47,
+      "newIndex": 50,
+      "old": "See where it goes",
+      "current": "See where it goes. ",
+      "zh": "看看它要去哪"
+    },
+    {
+      "knot": "LittleFinger",
+      "oldIndex": 272,
+      "newIndex": 276,
+      "old": "Let him take it",
+      "current": "Let him take it ",
+      "zh": "任他拿走"
+    },
+    {
+      "knot": "LittleFinger",
+      "oldIndex": 273,
+      "newIndex": 277,
+      "old": "Quickly pull it out of his reach",
+      "current": "Quickly pull it out of his reach ",
+      "zh": "赶紧移到他够不到的地方"
+    },
+    {
+      "knot": "LittleFinger",
+      "oldIndex": 344,
+      "newIndex": 347,
+      "old": "Leave the square.",
+      "current": "Leave the square. ",
+      "zh": "离开广场。"
+    },
+    {
+      "knot": "TojBoj",
+      "oldIndex": 31,
+      "newIndex": 31,
+      "old": "Try to read her lips ",
+      "current": "Try to read her lips. ",
+      "zh": "试着读她的唇语 "
+    },
+    {
+      "knot": "TojBoj",
+      "oldIndex": 196,
+      "newIndex": 197,
+      "old": "Spare her. This seems embarassing.",
+      "current": "Spare her. This seems embarassing. ",
+      "zh": "别为难她了。似乎挺尴尬。"
+    },
+    {
+      "knot": "TojBoj",
+      "oldIndex": 212,
+      "newIndex": 214,
+      "old": "Bite your tongue",
+      "current": "Bite your tongue. ",
+      "zh": "把话咽回去"
+    },
+    {
+      "knot": "FeithishCourt",
+      "oldIndex": 26,
+      "newIndex": 26,
+      "old": "Leave",
+      "current": "Leave. ",
+      "zh": "离开"
+    },
+    {
+      "knot": "Clanker",
+      "oldIndex": 20,
+      "newIndex": 20,
+      "old": " token.",
+      "current": " token. ",
+      "zh": "代币。"
+    },
+    {
+      "knot": "Clanker",
+      "oldIndex": 21,
+      "newIndex": 22,
+      "old": "Insert a token.",
+      "current": "Insert a token. ",
+      "zh": "投入一枚代币。"
+    },
+    {
+      "knot": "Clanker",
+      "oldIndex": 52,
+      "newIndex": 55,
+      "old": "Let it finish.",
+      "current": "Let it finish... ",
+      "zh": "让它说完。"
+    },
+    {
+      "knot": "Clanker",
+      "oldIndex": 95,
+      "newIndex": 100,
+      "old": "Attempt to... \"sense\" the machine ",
+      "current": "Attempt to... \"sense\" the machine. ",
+      "zh": "试着……“感知”机器 "
+    },
+    {
+      "knot": "Clanker",
+      "oldIndex": 259,
+      "newIndex": 264,
+      "old": "Leave it to... whatever it's doing, and return to the Feithish Court",
+      "current": "Leave it to... whatever it's doing, and return to the Feithish Court. ",
+      "zh": "让它继续……忙它的事，回费蒂什庭院"
+    },
+    {
+      "knot": "Pissoir",
+      "oldIndex": 19,
+      "newIndex": 18,
+      "old": "Leave",
+      "current": "Leave. ",
+      "zh": "离开"
+    },
+    {
+      "knot": "GigglesOfAPissoir",
+      "oldIndex": 8,
+      "newIndex": 7,
+      "old": "Ignore it and wait for her to collect herself",
+      "current": "Ignore it and wait for her to collect herself. ",
+      "zh": "不理会，等她缓过来"
+    },
+    {
+      "knot": "GigglesOfAPissoir",
+      "oldIndex": 50,
+      "newIndex": 50,
+      "old": "Listen intently.",
+      "current": "Listen intently... ",
+      "zh": "专注聆听。"
+    },
+    {
+      "knot": "GigglesOfAPissoir",
+      "oldIndex": 62,
+      "newIndex": 62,
+      "old": "Let her read on.",
+      "current": "Let her read on... ",
+      "zh": "让她读下去。"
+    },
+    {
+      "knot": "GigglesOfAPissoir",
+      "oldIndex": 72,
+      "newIndex": 73,
+      "old": "Keep listening.",
+      "current": "Keep listening... ",
+      "zh": "继续听。"
+    },
+    {
+      "knot": "GigglesOfAPissoir",
+      "oldIndex": 73,
+      "newIndex": 74,
+      "old": "Keep listening, with an air of quiet yet intimate understanding.",
+      "current": "Keep listening, with an air of quiet yet intimate understanding. ",
+      "zh": "带着沉静又亲密的会意，继续听。"
+    },
+    {
+      "knot": "Havamal",
+      "oldIndex": 18,
+      "newIndex": 17,
+      "old": "Don't crack the joke.",
+      "current": "Don't crack the joke. ",
+      "zh": "忍住那个笑话。"
+    },
+    {
+      "knot": "Voluspa",
+      "oldIndex": 225,
+      "newIndex": 225,
+      "old": "Let her finish...",
+      "current": "Let her finish... ",
+      "zh": "让她说完……"
+    },
+    {
+      "knot": "Odin",
+      "oldIndex": 33,
+      "newIndex": 33,
+      "old": "Reclaim control of your mind.",
+      "current": "Reclaim control of your mind. ",
+      "zh": "夺回心智的控制权。"
+    },
+    {
+      "knot": "RandomEventStatic",
+      "oldIndex": 3,
+      "newIndex": 2,
+      "old": "Hang up.",
+      "current": "Hang up. ",
+      "zh": "挂断。"
+    },
+    {
+      "knot": "Carolina",
+      "oldIndex": 11,
+      "newIndex": 11,
+      "old": "Enter the library",
+      "current": "Enter the library. ",
+      "zh": "进入图书馆"
+    },
+    {
+      "knot": "Carolina",
+      "oldIndex": 13,
+      "newIndex": 14,
+      "old": "Leave",
+      "current": "Leave. ",
+      "zh": "离开"
+    },
+    {
+      "knot": "Carolina",
+      "oldIndex": 21,
+      "newIndex": 24,
+      "old": "Motion in a vaguely excusatory manner",
+      "current": "Motion in a vaguely excusatory manner. ",
+      "zh": "含糊地比划，表示歉意"
+    },
+    {
+      "knot": "Carolina",
+      "oldIndex": 36,
+      "newIndex": 40,
+      "old": "... again.",
+      "current": "... again",
+      "zh": "……又来。"
+    },
+    {
+      "knot": "Carolina",
+      "oldIndex": 80,
+      "newIndex": 83,
+      "old": "(Sneak a peek at Little Finger's note)",
+      "current": "Sneak a peek at Little Finger's note ",
+      "zh": "（偷看小指的字条）"
+    },
+    {
+      "knot": "Carolina",
+      "oldIndex": 118,
+      "newIndex": 122,
+      "old": "Leave the Carolina",
+      "current": "Leave the Carolina. ",
+      "zh": "离开卡罗利娜"
+    },
+    {
+      "knot": "Carolina",
+      "oldIndex": 119,
+      "newIndex": 123,
+      "old": "Go back",
+      "current": "Go back ",
+      "zh": "回去"
+    },
+    {
+      "knot": "CarolinaLibrary",
+      "oldIndex": 17,
+      "newIndex": 16,
+      "old": "Leave the library",
+      "current": "Leave the library. ",
+      "zh": "离开图书馆"
+    },
+    {
+      "knot": "CarolinaLibrary",
+      "oldIndex": 20,
+      "newIndex": 20,
+      "old": "Look at Little Finger's note",
+      "current": "Look at Little Finger's note. ",
+      "zh": "查看小指的字条"
+    },
+    {
+      "knot": "CarolinaLibrary",
+      "oldIndex": 61,
+      "newIndex": 63,
+      "old": "Leave",
+      "current": "Leave. ",
+      "zh": "离开"
+    },
+    {
+      "knot": "LibraryReturn",
+      "oldIndex": 1,
+      "newIndex": 0,
+      "old": "Go back",
+      "current": "Go back. ",
+      "zh": "返回"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 16,
+      "newIndex": 15,
+      "old": "He wants me to do a sonar sweep.",
+      "current": "He wants me to do a sonar sweep. ",
+      "zh": "他想让我做一次声呐扫描。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 17,
+      "newIndex": 17,
+      "old": "I should kill my prop.",
+      "current": "I should kill my prop. ",
+      "zh": "我该关掉螺旋桨。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 19,
+      "newIndex": 20,
+      "old": "Still. What the fuck? (more aggressively)",
+      "current": "Still. What the fuck? (more aggressively) ",
+      "zh": "还是那句：到底他妈怎么了？（更凶一点）"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 30,
+      "newIndex": 31,
+      "old": "Flash my lights. A distraction.",
+      "current": "Flash my lights. A distraction. ",
+      "zh": "闪灯，转移注意。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 31,
+      "newIndex": 32,
+      "old": "Dim my lights. Go dark.",
+      "current": "Dim my lights. Go dark. ",
+      "zh": "调暗灯光，隐入黑暗。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 32,
+      "newIndex": 33,
+      "old": "Respond with an unintelligible gesture of your own.",
+      "current": "Respond with an unintelligible gesture of your own. ",
+      "zh": "回一个自己也看不懂的手势。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 41,
+      "newIndex": 42,
+      "old": "Nod your head.",
+      "current": "Nod your head. ",
+      "zh": "点头。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 42,
+      "newIndex": 43,
+      "old": "Shake your head.",
+      "current": "Shake your head. ",
+      "zh": "摇头。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 43,
+      "newIndex": 44,
+      "old": "Trace the downward spiral of a whirlpool with your index finger, ending with a silent plop, then tilt your head sideways, close your eyes, and stick out your tongue as if dead.",
+      "current": "Trace the downward spiral of a whirlpool with your index finger, ending with a silent plop, then tilt your head sideways, close your eyes, and stick out your tongue as if dead. ",
+      "zh": "食指描一个向下的旋涡，末尾无声“扑通”；再把头歪向一边，闭眼吐舌，装死。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 45,
+      "newIndex": 46,
+      "old": "Point north.",
+      "current": "Point north. ",
+      "zh": "指北。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 46,
+      "newIndex": 47,
+      "old": "Point east.",
+      "current": "Point east. ",
+      "zh": "指东。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 47,
+      "newIndex": 48,
+      "old": "Point south.",
+      "current": "Point south. ",
+      "zh": "指南。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 48,
+      "newIndex": 49,
+      "old": "Point west.",
+      "current": "Point west. ",
+      "zh": "指西。"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "oldIndex": 49,
+      "newIndex": 50,
+      "old": "Point out what would have been your window.",
+      "current": "Point out what would have been your window. ",
+      "zh": "指向本该是窗户的地方。"
+    },
+    {
+      "knot": "FrayedKnot",
+      "oldIndex": 52,
+      "newIndex": 52,
+      "old": "Feel the knot ",
+      "current": "Feel the knot. ",
+      "zh": "触摸绳结 "
+    },
+    {
+      "knot": "FrayedKnot",
+      "oldIndex": 55,
+      "newIndex": 55,
+      "old": "See the knot ",
+      "current": "See the knot. ",
+      "zh": "看绳结 "
+    },
+    {
+      "knot": "FrayedKnot",
+      "oldIndex": 57,
+      "newIndex": 57,
+      "old": "Taste the knot ",
+      "current": "Taste the knot. ",
+      "zh": "尝绳结 "
+    },
+    {
+      "knot": "FrayedKnot",
+      "oldIndex": 181,
+      "newIndex": 181,
+      "old": "Probably best to let them have at it.",
+      "current": "Probably best to let them have at it. ",
+      "zh": "最好还是让他们吵吧。"
+    },
+    {
+      "knot": "FrayedKnot",
+      "oldIndex": 186,
+      "newIndex": 187,
+      "old": "Don't get drawn in.",
+      "current": "Don't get drawn in. ",
+      "zh": "别卷进去。"
+    },
+    {
+      "knot": "RakanStinger",
+      "oldIndex": 6,
+      "newIndex": 6,
+      "old": "Call Tinker to tell him about the component you found.",
+      "current": "Call Tinker to tell him about the component you found. ",
+      "zh": "呼叫机匠，告诉他你找到的部件。"
+    },
+    {
+      "knot": "RakanStinger",
+      "oldIndex": 174,
+      "newIndex": 176,
+      "old": "Let him. It's what you'd do too.",
+      "current": "Let him. It's what you'd do too. ",
+      "zh": "随他吧。换你也这么做。"
+    }
+  ],
+  "unmatched": [],
+  "conflicts": [],
+  "manuallyReviewed": [
+    {
+      "knot": "CutterMusings",
+      "index": 125,
+      "source": "Stay quiet",
+      "zh": "保持安静"
+    },
+    {
+      "knot": "TheTerritorialGuard",
+      "index": 18,
+      "source": "Motion back: What the fuck is going on? (or similar)",
+      "zh": "比划回去：到底他妈怎么回事？（大概这个意思）"
+    }
+  ],
+  "newTranslations": 5
+}
