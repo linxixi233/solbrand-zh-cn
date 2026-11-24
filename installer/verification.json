@@ -7,7 +7,7 @@
     "sceneTextProperties":  313,
     "proseResources":  349,
     "sourceUnchangedSha256":  "bf7492e0b375367cb3d31a4239173dff76a83ec48b17f3825c9f4d890371532c",
-    "exeSha256":  "f469ce794a1a0d947a7b94a45e471d32db1c8f229dd09ae9e5f174ccb2d0cfb1",
+    "exeSha256":  "14c913afb1586996f7e6977d3972b6036e0073751482b2da87417e473ab8b495",
     "godotTests":  [
                        "lifecycle",
                        "late font assignment",
